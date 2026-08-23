@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .font-mono-code {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+.stat-card {
+  border-top: 4px solid #1A1A1A;
+}
+
+.stat-card.accent {
+  border-top: 4px solid #FF5A36;
+}
+
+.badge-pending {
+  background-color: #FEF3C7;
+  color: #92400E;
+}
+
+.badge-active {
+  background-color: #D1FAE5;
+  color: #065F46;
+}
+

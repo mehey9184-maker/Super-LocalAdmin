@@ -1,0 +1,6 @@
+{
+  "name": "LocalEats Super Admin Portal",
+  "description": "Desktop-first Super Admin Portal for LocalEats with merchant approvals, live dispatch map, rider verification, and financial payouts.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

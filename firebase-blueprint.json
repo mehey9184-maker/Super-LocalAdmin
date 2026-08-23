@@ -1,0 +1,142 @@
+{
+  "entities": {
+    "Shop": {
+      "title": "Shop",
+      "description": "Merchant restaurant profile and operation configuration",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique shop identifier" },
+        "name": { "type": "string", "description": "Restaurant / merchant name" },
+        "owner_id": { "type": "string", "description": "Owner user ID" },
+        "email": { "type": "string", "description": "Merchant business email" },
+        "phone": { "type": "string", "description": "Merchant contact phone" },
+        "address": { "type": "string", "description": "Street address" },
+        "city": { "type": "string", "description": "City e.g. Cape Town" },
+        "suburb": { "type": "string", "description": "Township or suburb e.g. CBD, Khayelitsha" },
+        "category": { "type": "string", "description": "Culinary category" },
+        "is_active": { "type": "boolean", "description": "Active status" },
+        "status": { "type": "string", "enum": ["active", "pending", "review", "suspended"], "description": "Merchant verification status" },
+        "delivery_fee": { "type": "number", "description": "Standard delivery fee in ZAR" },
+        "take_rate": { "type": "number", "description": "Platform commission percentage" },
+        "lat": { "type": "number", "description": "Latitude coordinate" },
+        "lng": { "type": "number", "description": "Longitude coordinate" },
+        "bank_details": { "type": "string", "description": "Bank settlement details" },
+        "created_at": { "type": "string", "description": "Creation timestamp" }
+      },
+      "required": ["id", "name", "email"]
+    },
+    "RiderProfile": {
+      "title": "RiderProfile",
+      "description": "Delivery rider fleet profile and live telemetry",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique rider identifier" },
+        "full_name": { "type": "string", "description": "Rider full name" },
+        "email": { "type": "string", "description": "Rider email" },
+        "phone": { "type": "string", "description": "Rider phone" },
+        "is_online": { "type": "boolean", "description": "Live online status for dispatch" },
+        "status": { "type": "string", "enum": ["available", "busy", "offline", "transit"], "description": "Current status" },
+        "vehicle_type": { "type": "string", "enum": ["motorbike", "bicycle", "car"], "description": "Vehicle classification" },
+        "verification_status": { "type": "string", "enum": ["approved", "pending", "suspended"], "description": "Account verification status" },
+        "license_status": { "type": "string", "description": "Driver's license compliance status" },
+        "background_check": { "type": "string", "description": "Background check clearance status" },
+        "rating": { "type": "number", "description": "Rider customer score out of 5.0" },
+        "rating_count": { "type": "number", "description": "Total ratings count" },
+        "total_earnings": { "type": "number", "description": "Cumulative delivery earnings in ZAR" },
+        "total_deliveries": { "type": "number", "description": "Total completed orders" },
+        "current_latitude": { "type": "number", "description": "Live GPS latitude" },
+        "current_longitude": { "type": "number", "description": "Live GPS longitude" },
+        "battery_level": { "type": "number", "description": "Phone battery percentage" },
+        "created_at": { "type": "string", "description": "Registration date" }
+      },
+      "required": ["id", "full_name"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer order record with live dispatch status and telemetry",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique order tracking code e.g. ORD-9821" },
+        "shop_id": { "type": "string", "description": "Merchant ID" },
+        "shop_name": { "type": "string", "description": "Merchant display name" },
+        "customer_name": { "type": "string", "description": "Customer recipient name" },
+        "phone": { "type": "string", "description": "Customer contact number" },
+        "email": { "type": "string", "description": "Customer email" },
+        "address": { "type": "string", "description": "Dropoff location address" },
+        "suburb": { "type": "string", "description": "Dropoff suburb" },
+        "city": { "type": "string", "description": "City" },
+        "rider_id": { "type": "string", "description": "Assigned rider ID or null" },
+        "rider_name": { "type": "string", "description": "Assigned rider name" },
+        "product_name": { "type": "string", "description": "Order item summary" },
+        "total_price": { "type": "number", "description": "Order total value in ZAR" },
+        "status": { "type": "string", "enum": ["PENDING", "PREPARING", "OUT_FOR_DELIVERY", "COMPLETED", "CANCELLED", "DELAYED"], "description": "Order lifecycle stage" },
+        "delivery_status": { "type": "string", "description": "Delivery status text" },
+        "payment_method": { "type": "string", "description": "Payment method" },
+        "lat": { "type": "number", "description": "Customer GPS latitude" },
+        "lng": { "type": "number", "description": "Customer GPS longitude" },
+        "shop_lat": { "type": "number", "description": "Restaurant GPS latitude" },
+        "shop_lng": { "type": "number", "description": "Restaurant GPS longitude" },
+        "delay_minutes": { "type": "number", "description": "Minutes delayed from expected SLA" },
+        "created_at": { "type": "string", "description": "ISO order timestamp" }
+      },
+      "required": ["id", "shop_name", "customer_name", "total_price"]
+    },
+    "RiderConnection": {
+      "title": "RiderConnection",
+      "description": "Cryptographic merchant-rider pairing connection",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique pairing ID" },
+        "shop_id": { "type": "string", "description": "Merchant shop ID" },
+        "shop_name": { "type": "string", "description": "Merchant shop name" },
+        "rider_id": { "type": "string", "description": "Rider profile ID" },
+        "rider_name": { "type": "string", "description": "Rider full name" },
+        "pairing_cipher": { "type": "string", "description": "6-digit cryptographic pairing cipher (e.g. LX-8942)" },
+        "status": { "type": "string", "enum": ["active", "pending", "revoked"], "description": "Connection status" },
+        "paired_at": { "type": "string", "description": "Timestamp when cipher verified" },
+        "exclusive_radius_km": { "type": "number", "description": "Dispatch priority zone radius" }
+      },
+      "required": ["id", "shop_id", "rider_id", "pairing_cipher"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "Settlement payout transaction record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Settlement batch transaction ID" },
+        "shop_id": { "type": "string", "description": "Beneficiary shop or rider ID" },
+        "entity_type": { "type": "string", "description": "Shop Partners | Rider Fleet" },
+        "entity_name": { "type": "string", "description": "Recipient merchant or rider name" },
+        "amount": { "type": "number", "description": "Payout amount in ZAR" },
+        "payment_method": { "type": "string", "description": "EFT / Bank Transfer | Ozow Instant | Cash-on-Arrival" },
+        "transaction_id": { "type": "string", "description": "Banking settlement reference" },
+        "status": { "type": "string", "enum": ["paid", "pending", "processing"], "description": "Payout settlement status" },
+        "payment_date": { "type": "string", "description": "Settlement effective date" },
+        "created_at": { "type": "string", "description": "Record creation timestamp" }
+      },
+      "required": ["id", "entity_name", "amount", "status"]
+    }
+  },
+  "firestore": {
+    "/shops/{shopId}": {
+      "schema": "Shop",
+      "description": "Merchant restaurant profiles and configurations"
+    },
+    "/rider_profiles/{riderId}": {
+      "schema": "RiderProfile",
+      "description": "Delivery rider fleet profiles and telemetry"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Live food delivery orders and dispatch assignments"
+    },
+    "/rider_connections/{connectionId}": {
+      "schema": "RiderConnection",
+      "description": "Merchant-rider pairing ciphers and exclusive zones"
+    },
+    "/payments/{paymentId}": {
+      "schema": "Payment",
+      "description": "Merchant and rider financial settlement records"
+    }
+  }
+}

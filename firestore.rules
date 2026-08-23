@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Helper Primitives
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation Helpers
+    function isValidShop(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
+             data.email is string && data.email.size() <= 200;
+    }
+
+    function isValidRider(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.full_name is string && data.full_name.size() > 0 && data.full_name.size() <= 200;
+    }
+
+    function isValidOrder(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.shop_name is string && data.shop_name.size() <= 200 &&
+             data.customer_name is string && data.customer_name.size() <= 200 &&
+             data.total_price is number && data.total_price >= 0;
+    }
+
+    function isValidConnection(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.shop_id is string && data.rider_id is string &&
+             data.pairing_cipher is string && data.pairing_cipher.size() <= 64;
+    }
+
+    function isValidPayment(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.entity_name is string && data.entity_name.size() <= 200 &&
+             data.amount is number && data.amount >= 0;
+    }
+
+    // Default Deny Catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Merchant Shops Collection
+    match /shops/{shopId} {
+      allow read: if true;
+      allow create: if isValidId(shopId) && isValidShop(incoming());
+      allow update: if isValidId(shopId) && isValidShop(incoming());
+      allow delete: if isValidId(shopId);
+    }
+
+    // Delivery Riders Collection
+    match /rider_profiles/{riderId} {
+      allow read: if true;
+      allow create: if isValidId(riderId) && isValidRider(incoming());
+      allow update: if isValidId(riderId) && isValidRider(incoming());
+      allow delete: if isValidId(riderId);
+    }
+
+    // Orders Collection
+    match /orders/{orderId} {
+      allow read: if true;
+      allow create: if isValidId(orderId) && isValidOrder(incoming());
+      allow update: if isValidId(orderId) && isValidOrder(incoming());
+      allow delete: if isValidId(orderId);
+    }
+
+    // Merchant-Rider Connections Collection
+    match /rider_connections/{connectionId} {
+      allow read: if true;
+      allow create: if isValidId(connectionId) && isValidConnection(incoming());
+      allow update: if isValidId(connectionId) && isValidConnection(incoming());
+      allow delete: if isValidId(connectionId);
+    }
+
+    // Settlement Payments Collection
+    match /payments/{paymentId} {
+      allow read: if true;
+      allow create: if isValidId(paymentId) && isValidPayment(incoming());
+      allow update: if isValidId(paymentId) && isValidPayment(incoming());
+      allow delete: if isValidId(paymentId);
+    }
+  }
+}
