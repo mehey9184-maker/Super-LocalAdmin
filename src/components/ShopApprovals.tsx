@@ -6,7 +6,7 @@ interface ShopApprovalsProps {
   onUpdateStatus: (shopId: string, status: ShopStatus) => void;
   onUpdateTakeRate: (shopId: string, takeRate: number) => void;
   onUpdateShopDetails?: (shopId: string, details: Partial<Shop>) => void;
-  onAddShop?: (shopData: Partial<Shop>) => void;
+  onAddShop?: (shopData: Partial<Shop> & { bank_details?: string }) => void;
 }
 
 export const ShopApprovals: React.FC<ShopApprovalsProps> = ({
@@ -223,9 +223,9 @@ export const ShopApprovals: React.FC<ShopApprovalsProps> = ({
               className="border border-gray-200 rounded-sm h-8 px-3 text-xs bg-white text-gray-800 font-bold outline-none focus:border-[#FF5A36]"
             >
               <option value="ALL">ALL CATEGORIES</option>
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat.toUpperCase()}
+              {categories.map((cat, idx) => (
+                <option key={cat || `cat-fallback-${idx}`} value={cat}>
+                  {(cat || "").toUpperCase()}
                 </option>
               ))}
             </select>
@@ -632,8 +632,9 @@ export const ShopApprovals: React.FC<ShopApprovalsProps> = ({
                     </div>
                     <div className="sm:col-span-2">
                       <label className="block text-[10px] uppercase font-bold text-gray-400 tracking-widest mb-1">Bank Settlement Details</label>
-                      <div className="border border-gray-200 rounded-sm p-2.5 bg-gray-50 font-mono-code text-gray-800">
-                        {selectedShop.bank_details || 'FNB Account Verified'}
+                      <div className="border border-gray-200 rounded-sm p-2.5 bg-gray-50 font-mono-code text-gray-800 flex justify-between items-center">
+                        <span className="text-gray-400">Stored in secure shop_payout_info collection</span>
+                        <span className="material-symbols-outlined text-[16px] text-emerald-500">lock</span>
                       </div>
                     </div>
                   </div>

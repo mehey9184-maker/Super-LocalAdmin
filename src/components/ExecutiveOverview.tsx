@@ -266,7 +266,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
                         <td className="p-3 font-bold text-gray-900">{o.id}</td>
                         <td className="p-3 font-sans font-bold text-[#1A1A1A]">{o.shop_name}</td>
                         <td className="p-3 font-sans text-gray-600">{o.customer_name}</td>
-                        <td className="p-3 text-right font-bold text-[#1A1A1A]">R{o.total_price.toFixed(2)}</td>
+                        <td className="p-3 text-right font-bold text-[#1A1A1A]">R{((o.total_price) || 0).toFixed(2)}</td>
                         <td className="p-3">
                           <span
                             className={`inline-flex items-center px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-sm ${badgeBg}`}
@@ -321,7 +321,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
 
                   <div className="flex justify-between items-center text-xs border-t border-gray-200 pt-2 font-mono-code">
                     <span className="text-gray-500 font-sans">{o.customer_name}</span>
-                    <span className="font-bold text-[#FF5A36]">R{o.total_price.toFixed(2)}</span>
+                    <span className="font-bold text-[#FF5A36]">R{((o.total_price) || 0).toFixed(2)}</span>
                   </div>
                 </div>
               ))
@@ -427,7 +427,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
                 </div>
                 <div className="text-right">
                   <span className="text-gray-400 text-[10px] uppercase font-bold tracking-widest">Total Amount</span>
-                  <p className="font-bold text-lg text-[#FF5A36] font-mono-code">R{selectedOrder.total_price.toFixed(2)}</p>
+                  <p className="font-bold text-lg text-[#FF5A36] font-mono-code">R{((selectedOrder.total_price) || 0).toFixed(2)}</p>
                 </div>
               </div>
 

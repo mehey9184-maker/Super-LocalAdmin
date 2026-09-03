@@ -102,10 +102,10 @@ export default function App() {
       const loadedRiders = await dbService.getRiders();
       const loadedPayments = await dbService.getPayments();
 
-      setShops(loadedShops);
-      setOrders(loadedOrders);
-      setRiders(loadedRiders);
-      setPayments(loadedPayments);
+      setShops(loadedShops || []);
+      setOrders(loadedOrders || []);
+      setRiders(loadedRiders || []);
+      setPayments(loadedPayments || []);
     } finally {
       setIsLoading(false);
     }
@@ -118,7 +118,7 @@ export default function App() {
     setShops(updated);
     addToast(
       `Merchant ${status === 'active' ? 'Approved' : 'Status Updated'}`,
-      `${shop?.name || shopId} status changed to ${status.toUpperCase()}`,
+      `${shop?.name || shopId} status changed to ${status?.toUpperCase() || status}`,
       status === 'active' ? 'success' : 'warning'
     );
   };
@@ -173,8 +173,8 @@ export default function App() {
     const updated = await dbService.updateRiderVerification(riderId, status);
     setRiders(updated);
     addToast(
-      `Rider Verification ${status === 'approved' ? 'Passed' : status.toUpperCase()}`,
-      `Credentials for ${rider?.full_name} marked as ${status.toUpperCase()}`,
+      `Rider Verification ${status === 'approved' ? 'Passed' : status?.toUpperCase() || status}`,
+      `Credentials for ${rider?.full_name} marked as ${status?.toUpperCase() || status}`,
       status === 'approved' ? 'success' : 'warning'
     );
   };

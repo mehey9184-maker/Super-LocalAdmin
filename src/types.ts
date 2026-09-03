@@ -25,9 +25,14 @@ export interface Shop {
   delivery_fee: number;
   take_rate: number; // e.g. 15%
   created_at: string;
-  bank_details?: string;
   total_orders_count?: number;
   gross_revenue?: number;
+}
+
+export interface ShopPayoutInfo {
+  shop_id: string;
+  bank_details: string;
+  updated_at: string;
 }
 
 export type OrderStatus = 

@@ -306,7 +306,7 @@ export const RiderFleet: React.FC<RiderFleetProps> = ({
               <div className="p-3 bg-gray-50 border border-gray-200 rounded-sm space-y-1 font-mono-code text-gray-800">
                 <p><strong>Phone:</strong> {selectedRiderForDocs.phone}</p>
                 <p><strong>Email:</strong> {selectedRiderForDocs.email}</p>
-                <p><strong>Vehicle:</strong> {selectedRiderForDocs.vehicle_type.toUpperCase()}</p>
+                <p><strong>Vehicle:</strong> {selectedRiderForDocs.vehicle_type?.toUpperCase() || selectedRiderForDocs.vehicle_type}</p>
               </div>
 
               <div className="border border-gray-200 rounded-sm p-4 bg-[#1A1A1A] text-white space-y-2 text-center">

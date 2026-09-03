@@ -80,7 +80,7 @@ export const FleetMap: React.FC<FleetMapProps> = ({
         <div class="p-2 text-xs font-sans">
           <strong class="text-xs font-bold text-slate-900">${shop.name}</strong>
           <p class="text-slate-500 text-[10px]">${shop.category} • ${shop.suburb}</p>
-          <p class="text-slate-700 font-mono-code font-bold mt-1">Delivery Fee: R${shop.delivery_fee.toFixed(2)}</p>
+          <p class="text-slate-700 font-mono-code font-bold mt-1">Delivery Fee: R${((shop.delivery_fee) || 0).toFixed(2)}</p>
         </div>
       `);
     });
@@ -138,7 +138,7 @@ export const FleetMap: React.FC<FleetMapProps> = ({
         order.customer_name
       }</strong>
           <p class="text-slate-600 text-[10px]">${order.address}, ${order.suburb}</p>
-          <p class="font-bold text-[#FF5A36] font-mono-code mt-1">R${order.total_price.toFixed(2)} (${order.status})</p>
+          <p class="font-bold text-[#FF5A36] font-mono-code mt-1">R${((order.total_price) || 0).toFixed(2)} (${order.status})</p>
         </div>
       `);
 
@@ -289,7 +289,7 @@ export const FleetMap: React.FC<FleetMapProps> = ({
                   </div>
 
                   <div className="p-2 bg-gray-50 rounded-sm border border-gray-100 flex justify-between items-center text-[11px] font-mono-code">
-                    <span className="text-gray-500">Value: <strong className="text-gray-800 font-bold">R{order.total_price.toFixed(2)}</strong></span>
+                    <span className="text-gray-500">Value: <strong className="text-gray-800 font-bold">R{((order.total_price) || 0).toFixed(2)}</strong></span>
                     <span className="text-gray-500">Rider: <strong className="text-gray-800 font-bold">{order.rider_name || 'None'}</strong></span>
                   </div>
 
@@ -393,7 +393,7 @@ export const FleetMap: React.FC<FleetMapProps> = ({
                   <option value="">-- SELECT RIDER --</option>
                   {availableRiders.map((r) => (
                     <option key={r.id} value={r.id}>
-                      {r.full_name} ({r.vehicle_type.toUpperCase()} • ⭐ {r.rating} • {r.total_deliveries} jobs)
+                      {r.full_name} ({r.vehicle_type?.toUpperCase() || r.vehicle_type} • ⭐ {r.rating} • {r.total_deliveries} jobs)
                     </option>
                   ))}
                 </select>

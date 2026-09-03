@@ -16,7 +16,7 @@ import {
 } from 'firebase/firestore';
 import { getAuth, Auth, signInAnonymously, onAuthStateChanged, User } from 'firebase/auth';
 import firebaseConfigJson from '../../firebase-applet-config.json';
-import { Shop, Order, RiderProfile, PaymentSettlement, RiderConnection } from '../types';
+import { Shop, Order, RiderProfile, PaymentSettlement, RiderConnection, ShopPayoutInfo } from '../types';
 import { INITIAL_SHOPS, INITIAL_RIDERS, INITIAL_ORDERS, INITIAL_PAYMENTS, INITIAL_CONNECTIONS } from '../data/mockData';
 
 let firebaseApp: FirebaseApp | null = null;
@@ -108,7 +108,22 @@ export function getFirebaseAuth(): Auth | null {
   }
 }
 
-// Auto sign-in anonymously for operations portal
+// TODO: Super Admin Auth Mechanism Migration
+// Currently using anonymous auth which grants full access based on weak rules.
+// 
+// PROPOSED DESIGN FOR ADMIN AUTH:
+// 1. Firebase Auth: Admins should sign in with Email/Password or Google OAuth.
+// 2. Custom Claims: A trusted backend (Cloud Function or Admin SDK script) MUST 
+//    verify the user's identity and set a custom claim on their Firebase Auth token:
+//    { "admin": true }
+// 3. App Enforcer: Ensure `onAuthStateChanged` blocks the UI unless 
+//    user.getIdTokenResult().claims.admin === true.
+// 4. Firestore Rules:
+//    match /{document=**} {
+//      allow read, write: if request.auth != null && request.auth.token.admin == true;
+//    }
+// This completely secures the production data from unauthorized access while
+// connecting to the real localeats-5e26e project.
 export async function ensureAuth(): Promise<User | null> {
   const auth = getFirebaseAuth();
   if (!auth) return null;
@@ -234,6 +249,18 @@ export const firebaseService = {
       return true;
     } catch (err) {
       handleFirestoreError(err, OperationType.WRITE, `shops/${shop.id}`);
+      return false;
+    }
+  },
+
+  async saveShopPayoutInfo(payoutInfo: ShopPayoutInfo): Promise<boolean> {
+    try {
+      const db = getFirestoreDb();
+      if (!db) return false;
+      await setDoc(doc(db, 'shop_payout_info', payoutInfo.shop_id), payoutInfo, { merge: true });
+      return true;
+    } catch (err) {
+      handleFirestoreError(err, OperationType.WRITE, `shop_payout_info/${payoutInfo.shop_id}`);
       return false;
     }
   },

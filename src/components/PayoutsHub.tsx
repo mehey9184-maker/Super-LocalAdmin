@@ -136,13 +136,13 @@ export const PayoutsHub: React.FC<PayoutsHubProps> = ({
                       </div>
                     </td>
                     <td className="py-3.5 px-4 text-right text-gray-700 font-bold">
-                      R{p.gross_revenue.toFixed(2)}
+                      R{((p.gross_revenue) || 0).toFixed(2)}
                     </td>
                     <td className="py-3.5 px-4 text-right text-gray-400">
-                      R{p.commission_amount.toFixed(2)}
+                      R{((p.commission_amount) || 0).toFixed(2)}
                     </td>
                     <td className="py-3.5 px-4 text-right font-bold text-[#1A1A1A] text-sm">
-                      R{p.net_payout.toFixed(2)}
+                      R{((p.net_payout) || 0).toFixed(2)}
                     </td>
                     <td className="py-3.5 px-4 font-sans">
                       <span
@@ -192,7 +192,7 @@ export const PayoutsHub: React.FC<PayoutsHubProps> = ({
           </table>
         </div>
         <div className="border-t border-gray-200 p-3 bg-gray-50 text-xs text-gray-500 flex justify-between items-center font-sans">
-          <span className="font-bold">Pending Dispersal Sum: <strong className="text-[#1A1A1A] font-mono-code text-sm ml-1">R{totalNetPayoutDue.toFixed(2)}</strong></span>
+          <span className="font-bold">Pending Dispersal Sum: <strong className="text-[#1A1A1A] font-mono-code text-sm ml-1">R{((totalNetPayoutDue) || 0).toFixed(2)}</strong></span>
           <span className="font-mono-code text-[11px] font-bold text-gray-400">Showing {filteredPayments.length} of {payments.length} settlements</span>
         </div>
       </div>
@@ -226,11 +226,11 @@ export const PayoutsHub: React.FC<PayoutsHubProps> = ({
               <div className="grid grid-cols-2 gap-2 bg-gray-50 p-2.5 rounded-sm text-xs font-mono-code border border-gray-100">
                 <div>
                   <span className="text-gray-400 text-[9px] uppercase block font-sans">Gross Volume</span>
-                  <span className="font-bold text-gray-800">R{p.gross_revenue.toFixed(2)}</span>
+                  <span className="font-bold text-gray-800">R{((p.gross_revenue) || 0).toFixed(2)}</span>
                 </div>
                 <div>
                   <span className="text-gray-400 text-[9px] uppercase block font-sans">Net Payout Due</span>
-                  <span className="font-bold text-[#FF5A36]">R{p.net_payout.toFixed(2)}</span>
+                  <span className="font-bold text-[#FF5A36]">R{((p.net_payout) || 0).toFixed(2)}</span>
                 </div>
               </div>
 
@@ -261,7 +261,7 @@ export const PayoutsHub: React.FC<PayoutsHubProps> = ({
         <div className="md:hidden fixed bottom-18 left-4 right-4 z-30 bg-[#1A1A1A] text-white p-3 rounded-sm shadow-2xl flex items-center justify-between border border-white/10 animate-fade-in">
           <div>
             <span className="text-[10px] text-gray-400 font-mono-code uppercase block">Payout Due Sum</span>
-            <span className="text-xs font-bold text-[#FF5A36] font-mono-code">R{totalNetPayoutDue.toFixed(2)}</span>
+            <span className="text-xs font-bold text-[#FF5A36] font-mono-code">R{((totalNetPayoutDue) || 0).toFixed(2)}</span>
           </div>
           <button
             onClick={handleBatchExecution}

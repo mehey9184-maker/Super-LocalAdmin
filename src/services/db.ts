@@ -20,7 +20,8 @@ function getLocalItem<T>(key: string, defaultData: T): T {
       localStorage.setItem(key, JSON.stringify(defaultData));
       return defaultData;
     }
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    return parsed || defaultData;
   } catch (e) {
     console.error(`Failed to read ${key} from localStorage`, e);
     return defaultData;
@@ -113,13 +114,21 @@ export const dbService = {
       delivery_fee: newShopData.delivery_fee || 25,
       take_rate: newShopData.take_rate || 15,
       created_at: new Date().toISOString(),
-      bank_details: newShopData.bank_details || 'FNB - 62890192837',
       total_orders_count: 0,
       gross_revenue: 0
     };
     const updated = [newShop, ...shops];
     setLocalItem(STORAGE_KEYS.SHOPS, updated);
     firebaseService.saveShop(newShop);
+    
+    // Save bank details to a separate secure collection
+    const bankDetails = (newShopData as any).bank_details || 'FNB - 62890192837';
+    firebaseService.saveShopPayoutInfo({
+      shop_id: newShop.id,
+      bank_details: bankDetails,
+      updated_at: new Date().toISOString()
+    });
+
     return newShop;
   },
 

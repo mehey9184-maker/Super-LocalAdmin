@@ -21,7 +21,6 @@ export const INITIAL_SHOPS: Shop[] = [
     delivery_fee: 25.0,
     take_rate: 15,
     created_at: '2023-08-12T10:30:00Z',
-    bank_details: 'FNB - 62849201938 - Branch 250655',
     total_orders_count: 1420,
     gross_revenue: 128450.00
   },
@@ -42,7 +41,6 @@ export const INITIAL_SHOPS: Shop[] = [
     delivery_fee: 30.0,
     take_rate: 12,
     created_at: '2023-09-01T11:15:00Z',
-    bank_details: 'Standard Bank - 029384729 - Branch 051001',
     total_orders_count: 980,
     gross_revenue: 94200.00
   },
@@ -63,7 +61,6 @@ export const INITIAL_SHOPS: Shop[] = [
     delivery_fee: 28.0,
     take_rate: 10,
     created_at: '2023-07-20T08:00:00Z',
-    bank_details: 'Absa - 4082910394 - Branch 632005',
     total_orders_count: 2150,
     gross_revenue: 185000.00
   },
@@ -84,7 +81,6 @@ export const INITIAL_SHOPS: Shop[] = [
     delivery_fee: 25.0,
     take_rate: 15,
     created_at: '2023-10-27T14:20:00Z',
-    bank_details: 'Capitec - 1509283741',
     total_orders_count: 0,
     gross_revenue: 0
   },
@@ -105,7 +101,6 @@ export const INITIAL_SHOPS: Shop[] = [
     delivery_fee: 35.0,
     take_rate: 14,
     created_at: '2023-10-26T16:45:00Z',
-    bank_details: 'Nedbank - 1987203948 - Branch 198765',
     total_orders_count: 0,
     gross_revenue: 0
   },
@@ -126,7 +121,6 @@ export const INITIAL_SHOPS: Shop[] = [
     delivery_fee: 20.0,
     take_rate: 12,
     created_at: '2023-10-25T09:10:00Z',
-    bank_details: 'FNB - 62910293847',
     total_orders_count: 0,
     gross_revenue: 0
   },
@@ -147,7 +141,6 @@ export const INITIAL_SHOPS: Shop[] = [
     delivery_fee: 35.0,
     take_rate: 15,
     created_at: '2023-06-10T12:00:00Z',
-    bank_details: 'Standard Bank - 039281726',
     total_orders_count: 1890,
     gross_revenue: 162000.00
   }
