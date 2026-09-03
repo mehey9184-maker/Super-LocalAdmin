@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import type { User } from 'firebase/auth';
-import { AlertTriangle, CheckCircle2, KeyRound, LoaderCircle, LogOut, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, KeyRound, LoaderCircle, LogOut, ShieldCheck } from 'lucide-react';
 import { BrandLogo } from './components/BrandLogo';
+import { ShopReviewQueue } from './components/ShopReviewQueue';
 import { validateRuntimeConfiguration } from './config/runtimeConfig';
 import { AdminApiError, adminApi, type AdminIdentity } from './services/adminApi';
 import { observeAdminAuth, signInAdmin, signOutAdmin } from './services/adminAuth';
@@ -217,63 +218,40 @@ interface AuthorizedAppProps {
   admin: AdminIdentity;
   busy: boolean;
   onSignOut: () => Promise<void>;
+  onAuthorizationFailure: (status: 401 | 403) => void;
 }
 
-const AuthorizedApp = ({ admin, busy, onSignOut }: AuthorizedAppProps) => (
+const AuthorizedApp = ({
+  admin,
+  busy,
+  onSignOut,
+  onAuthorizationFailure,
+}: AuthorizedAppProps) => (
   <div className="min-h-screen bg-[#F8F9FA] text-[#1A1A1A]">
     <header className="border-b border-gray-200 bg-white px-6 py-4 shadow-xs">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
         <BrandLogo variant="full" size={170} />
-        <button
-          type="button"
-          onClick={() => void onSignOut()}
-          disabled={busy}
-          className="flex items-center gap-2 rounded-sm border border-gray-300 px-3 py-2 text-xs font-bold uppercase tracking-wider text-gray-800 transition hover:border-gray-500 disabled:opacity-60"
-        >
-          <LogOut aria-hidden="true" className="h-4 w-4" />
-          Sign out
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="hidden text-right sm:block">
+            <p className="text-xs font-bold text-gray-900">{admin.email ?? 'Authenticated admin'}</p>
+            <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+              API authorized
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void onSignOut()}
+            disabled={busy}
+            className="flex items-center gap-2 rounded-sm border border-gray-300 px-3 py-2 text-xs font-bold uppercase tracking-wider text-gray-800 transition hover:border-gray-500 disabled:opacity-60"
+          >
+            <LogOut aria-hidden="true" className="h-4 w-4" />
+            Sign out
+          </button>
+        </div>
       </div>
     </header>
 
-    <main className="mx-auto max-w-5xl px-6 py-12">
-      <section
-        className="rounded-sm border border-gray-200 bg-white p-8 shadow-lg"
-        aria-labelledby="authorized-heading"
-      >
-        <div className="flex items-start gap-4">
-          <CheckCircle2 aria-hidden="true" className="mt-0.5 h-8 w-8 shrink-0 text-emerald-600" />
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-700">
-              API-authorized session
-            </p>
-            <h1 id="authorized-heading" className="mt-2 text-2xl font-extrabold tracking-tight">
-              Secure Super Admin foundation ready
-            </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-600">
-              Firebase authentication succeeded and the LocalEats API confirmed an active super_admin record.
-              Shop approval controls remain unavailable until the B6 review workflow is migrated to the
-              authoritative API.
-            </p>
-          </div>
-        </div>
-
-        <dl className="mt-8 grid gap-4 border-t border-gray-200 pt-6 sm:grid-cols-3">
-          <div>
-            <dt className="text-xs font-bold uppercase tracking-wider text-gray-500">Firebase UID</dt>
-            <dd className="mt-1 break-all font-mono-code text-sm text-gray-900">{admin.uid}</dd>
-          </div>
-          <div>
-            <dt className="text-xs font-bold uppercase tracking-wider text-gray-500">Email</dt>
-            <dd className="mt-1 break-all text-sm text-gray-900">{admin.email ?? 'Not provided'}</dd>
-          </div>
-          <div>
-            <dt className="text-xs font-bold uppercase tracking-wider text-gray-500">Server role</dt>
-            <dd className="mt-1 text-sm font-semibold text-gray-900">{admin.role}</dd>
-          </div>
-        </dl>
-      </section>
-    </main>
+    <ShopReviewQueue onAuthorizationFailure={onAuthorizationFailure} />
   </div>
 );
 
@@ -402,6 +380,27 @@ export default function App() {
     }
   };
 
+  const handleAuthorizationFailure = useCallback((status: 401 | 403) => {
+    verificationSequence.current += 1;
+    setAccess((current) => {
+      if (current.status !== 'authorized') return current;
+
+      if (status === 401) {
+        return {
+          status: 'unauthorized',
+          user: current.user,
+          message: 'The LocalEats API rejected this Firebase session. Sign out and sign in again.',
+        };
+      }
+
+      return {
+        status: 'forbidden',
+        user: current.user,
+        message: 'This Firebase account is not provisioned as an active LocalEats super_admin.',
+      };
+    });
+  }, []);
+
   if (access.status === 'auth-loading') {
     return <LoadingScreen message="Checking Firebase authentication…" />;
   }
@@ -417,7 +416,14 @@ export default function App() {
   }
 
   if (access.status === 'authorized') {
-    return <AuthorizedApp admin={access.admin} busy={signOutPending} onSignOut={handleSignOut} />;
+    return (
+      <AuthorizedApp
+        admin={access.admin}
+        busy={signOutPending}
+        onSignOut={handleSignOut}
+        onAuthorizationFailure={handleAuthorizationFailure}
+      />
+    );
   }
 
   if (access.status === 'unauthorized') {
