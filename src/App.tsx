@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import type { User } from 'firebase/auth';
-import { AlertTriangle, KeyRound, LoaderCircle, LogOut, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, KeyRound, LoaderCircle, ShieldCheck } from 'lucide-react';
 import { BrandLogo } from './components/BrandLogo';
-import { ShopReviewQueue } from './components/ShopReviewQueue';
+import { ControlCenterShell } from './components/ControlCenterShell';
 import { validateRuntimeConfiguration } from './config/runtimeConfig';
 import { AdminApiError, adminApi, type AdminIdentity } from './services/adminApi';
 import { observeAdminAuth, signInAdmin, signOutAdmin } from './services/adminAuth';
@@ -214,47 +214,6 @@ const AccessDeniedScreen = ({
   </main>
 );
 
-interface AuthorizedAppProps {
-  admin: AdminIdentity;
-  busy: boolean;
-  onSignOut: () => Promise<void>;
-  onAuthorizationFailure: (status: 401 | 403) => void;
-}
-
-const AuthorizedApp = ({
-  admin,
-  busy,
-  onSignOut,
-  onAuthorizationFailure,
-}: AuthorizedAppProps) => (
-  <div className="min-h-screen bg-[#F8F9FA] text-[#1A1A1A]">
-    <header className="border-b border-gray-200 bg-white px-6 py-4 shadow-xs">
-      <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
-        <BrandLogo variant="full" size={170} />
-        <div className="flex items-center gap-3">
-          <div className="hidden text-right sm:block">
-            <p className="text-xs font-bold text-gray-900">{admin.email ?? 'Authenticated admin'}</p>
-            <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700">
-              API authorized
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => void onSignOut()}
-            disabled={busy}
-            className="flex items-center gap-2 rounded-sm border border-gray-300 px-3 py-2 text-xs font-bold uppercase tracking-wider text-gray-800 transition hover:border-gray-500 disabled:opacity-60"
-          >
-            <LogOut aria-hidden="true" className="h-4 w-4" />
-            Sign out
-          </button>
-        </div>
-      </div>
-    </header>
-
-    <ShopReviewQueue onAuthorizationFailure={onAuthorizationFailure} />
-  </div>
-);
-
 export default function App() {
   const [access, setAccess] = useState<AccessState>({ status: 'auth-loading' });
   const [signInPending, setSignInPending] = useState(false);
@@ -417,9 +376,9 @@ export default function App() {
 
   if (access.status === 'authorized') {
     return (
-      <AuthorizedApp
+      <ControlCenterShell
         admin={access.admin}
-        busy={signOutPending}
+        signOutPending={signOutPending}
         onSignOut={handleSignOut}
         onAuthorizationFailure={handleAuthorizationFailure}
       />
