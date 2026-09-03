@@ -1,400 +1,431 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import {
-  TabType,
-  Shop,
-  Order,
-  RiderProfile,
-  PaymentSettlement,
-  ShopStatus,
-  VerificationStatus,
-  ToastNotification,
-  ToastType,
-} from './types';
-import { dbService } from './services/db';
-import { firebaseService, ensureAuth } from './services/firebase';
-import { NavigationSidebar } from './components/NavigationSidebar';
-import { TopHeader } from './components/TopHeader';
-import { ExecutiveOverview } from './components/ExecutiveOverview';
-import { ShopApprovals } from './components/ShopApprovals';
-import { FleetMap } from './components/FleetMap';
-import { RiderFleet } from './components/RiderFleet';
-import { PairingManager } from './components/PairingManager';
-import { PayoutsHub } from './components/PayoutsHub';
-import { NewAlertModal } from './components/NewAlertModal';
-import { SettingsModal } from './components/SettingsModal';
-import { ToastContainer } from './components/ToastContainer';
-import { DashboardSkeleton } from './components/DashboardSkeleton';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import type { User } from 'firebase/auth';
+import { AlertTriangle, KeyRound, LoaderCircle, ShieldCheck } from 'lucide-react';
+import { BrandLogo } from './components/BrandLogo';
+import { ControlCenterShell } from './components/ControlCenterShell';
+import { validateRuntimeConfiguration } from './config/runtimeConfig';
+import { AdminApiError, adminApi, type AdminIdentity } from './services/adminApi';
+import { observeAdminAuth, signInAdmin, signOutAdmin } from './services/adminAuth';
+
+type AccessState =
+  | { status: 'auth-loading' }
+  | { status: 'signed-out' }
+  | { status: 'verifying-admin'; user: User }
+  | { status: 'authorized'; user: User; admin: AdminIdentity }
+  | { status: 'unauthorized'; user: User; message: string }
+  | { status: 'forbidden'; user: User; message: string }
+  | { status: 'error'; user: User | null; message: string; httpStatus: number | null };
+
+const getSafeLoginMessage = (error: unknown): string => {
+  if (error && typeof error === 'object' && 'code' in error) {
+    const code = String(error.code);
+
+    if (
+      code === 'auth/invalid-credential' ||
+      code === 'auth/invalid-email' ||
+      code === 'auth/user-disabled' ||
+      code === 'auth/user-not-found' ||
+      code === 'auth/wrong-password'
+    ) {
+      return 'The email or password was not accepted.';
+    }
+
+    if (code === 'auth/too-many-requests') {
+      return 'Too many attempts. Please wait before trying again.';
+    }
+  }
+
+  return 'Firebase sign-in failed. Please try again.';
+};
+
+const getSafeAuthObserverMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : 'Firebase authentication could not be initialized.';
+
+const LoadingScreen = ({ message }: { message: string }) => (
+  <main className="min-h-screen bg-[#F8F9FA] px-6 py-12 text-[#1A1A1A]">
+    <div className="mx-auto flex min-h-[70vh] max-w-md items-center justify-center">
+      <div className="w-full rounded-sm border border-gray-200 bg-white p-8 text-center shadow-lg">
+        <LoaderCircle aria-hidden="true" className="mx-auto mb-4 h-8 w-8 animate-spin text-[#FF5A36]" />
+        <p className="text-sm font-semibold text-gray-700" role="status">
+          {message}
+        </p>
+      </div>
+    </div>
+  </main>
+);
+
+interface SignInScreenProps {
+  submitting: boolean;
+  errorMessage: string | null;
+  onSubmit: (email: string, password: string) => Promise<void>;
+}
+
+const SignInScreen = ({ submitting, errorMessage, onSubmit }: SignInScreenProps) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    await onSubmit(email, password);
+  };
+
+  return (
+    <main className="min-h-screen bg-[#F8F9FA] px-6 py-12 text-[#1A1A1A]">
+      <div className="mx-auto flex min-h-[75vh] max-w-md items-center justify-center">
+        <section
+          className="w-full rounded-sm border border-gray-200 bg-white p-8 shadow-xl"
+          aria-labelledby="sign-in-heading"
+        >
+          <BrandLogo variant="full" size={190} className="mb-8" />
+          <div className="mb-6 flex items-start gap-3">
+            <ShieldCheck aria-hidden="true" className="mt-0.5 h-6 w-6 shrink-0 text-[#FF5A36]" />
+            <div>
+              <h1 id="sign-in-heading" className="text-xl font-extrabold tracking-tight">
+                Super Admin sign in
+              </h1>
+              <p className="mt-1 text-sm leading-6 text-gray-600">
+                Sign in with your LocalEats Firebase account. Access is granted only after server authorization.
+              </p>
+            </div>
+          </div>
+
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div>
+              <label
+                className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-700"
+                htmlFor="admin-email"
+              >
+                Email
+              </label>
+              <input
+                id="admin-email"
+                type="email"
+                autoComplete="username"
+                required
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                disabled={submitting}
+                className="w-full rounded-sm border border-gray-300 px-3 py-2.5 text-sm outline-none transition focus:border-[#FF5A36] focus:ring-2 focus:ring-[#FF5A36]/20 disabled:bg-gray-100"
+              />
+            </div>
+
+            <div>
+              <label
+                className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-700"
+                htmlFor="admin-password"
+              >
+                Password
+              </label>
+              <input
+                id="admin-password"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                disabled={submitting}
+                className="w-full rounded-sm border border-gray-300 px-3 py-2.5 text-sm outline-none transition focus:border-[#FF5A36] focus:ring-2 focus:ring-[#FF5A36]/20 disabled:bg-gray-100"
+              />
+            </div>
+
+            {errorMessage ? (
+              <p
+                className="rounded-sm border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
+                role="alert"
+              >
+                {errorMessage}
+              </p>
+            ) : null}
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="flex w-full items-center justify-center gap-2 rounded-sm bg-[#FF5A36] px-4 py-3 text-sm font-bold uppercase tracking-wider text-white transition hover:bg-[#e04a29] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {submitting ? (
+                <LoaderCircle aria-hidden="true" className="h-4 w-4 animate-spin" />
+              ) : (
+                <KeyRound aria-hidden="true" className="h-4 w-4" />
+              )}
+              {submitting ? 'Signing in…' : 'Sign in securely'}
+            </button>
+          </form>
+        </section>
+      </div>
+    </main>
+  );
+};
+
+interface AccessDeniedScreenProps {
+  title: string;
+  message: string;
+  user: User | null;
+  canRetry: boolean;
+  busy: boolean;
+  onRetry: () => void;
+  onSignOut: () => Promise<void>;
+}
+
+const AccessDeniedScreen = ({
+  title,
+  message,
+  user,
+  canRetry,
+  busy,
+  onRetry,
+  onSignOut,
+}: AccessDeniedScreenProps) => (
+  <main className="min-h-screen bg-[#F8F9FA] px-6 py-12 text-[#1A1A1A]">
+    <div className="mx-auto flex min-h-[70vh] max-w-xl items-center justify-center">
+      <section
+        className="w-full rounded-sm border border-amber-200 bg-white p-8 shadow-xl"
+        aria-labelledby="access-state-heading"
+      >
+        <AlertTriangle aria-hidden="true" className="mb-4 h-9 w-9 text-amber-600" />
+        <h1 id="access-state-heading" className="text-xl font-extrabold tracking-tight">
+          {title}
+        </h1>
+        <p className="mt-3 text-sm leading-6 text-gray-700">{message}</p>
+        {user?.email ? <p className="mt-2 text-xs text-gray-500">Signed in as {user.email}</p> : null}
+        <div className="mt-6 flex flex-wrap gap-3">
+          {canRetry ? (
+            <button
+              type="button"
+              onClick={onRetry}
+              disabled={busy}
+              className="rounded-sm bg-[#FF5A36] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-60"
+            >
+              Retry authorization
+            </button>
+          ) : null}
+          {user ? (
+            <button
+              type="button"
+              onClick={() => void onSignOut()}
+              disabled={busy}
+              className="rounded-sm border border-gray-300 px-4 py-2 text-xs font-bold uppercase tracking-wider text-gray-800 disabled:opacity-60"
+            >
+              Sign out
+            </button>
+          ) : null}
+        </div>
+      </section>
+    </div>
+  </main>
+);
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [access, setAccess] = useState<AccessState>({ status: 'auth-loading' });
+  const [signInPending, setSignInPending] = useState(false);
+  const [signOutPending, setSignOutPending] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const verificationSequence = useRef(0);
 
-  // Data State
-  const [shops, setShops] = useState<Shop[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [riders, setRiders] = useState<RiderProfile[]>([]);
-  const [payments, setPayments] = useState<PaymentSettlement[]>([]);
+  const verifyAdmin = useCallback(async (user: User) => {
+    const sequence = ++verificationSequence.current;
+    setAccess({ status: 'verifying-admin', user });
 
-  // Modal State
-  const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [reassignTargetOrder, setReassignTargetOrder] = useState<Order | null>(null);
+    try {
+      const admin = await adminApi.getMe();
 
-  // Toast System State
-  const [toasts, setToasts] = useState<ToastNotification[]>([]);
-
-  const addToast = (title: string, message?: string, type: ToastType = 'info') => {
-    const newToast: ToastNotification = {
-      id: `toast-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      title,
-      message,
-      type,
-    };
-    setToasts((prev) => [...prev.slice(-3), newToast]);
-
-    setTimeout(() => {
-      removeToast(newToast.id);
-    }, 4000);
-  };
-
-  const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
-
-  // Initialize Firebase and load initial data
-  useEffect(() => {
-    ensureAuth();
-    loadAllData();
-
-    // Subscribe to live Firestore snapshots
-    const unsubOrders = firebaseService.subscribeToOrders((liveOrders) => {
-      if (liveOrders && liveOrders.length > 0) {
-        setOrders(liveOrders);
+      if (verificationSequence.current === sequence) {
+        setAccess({ status: 'authorized', user, admin });
       }
-    });
-
-    const unsubRiders = firebaseService.subscribeToRiders((liveRiders) => {
-      if (liveRiders && liveRiders.length > 0) {
-        setRiders(liveRiders);
+    } catch (error) {
+      if (verificationSequence.current !== sequence) {
+        return;
       }
-    });
 
-    const unsubShops = firebaseService.subscribeToShops((liveShops) => {
-      if (liveShops && liveShops.length > 0) {
-        setShops(liveShops);
+      if (error instanceof AdminApiError) {
+        if (error.status === 401) {
+          setAccess({
+            status: 'unauthorized',
+            user,
+            message: 'The LocalEats API rejected this Firebase session. Sign out and sign in again.',
+          });
+          return;
+        }
+
+        if (error.status === 403) {
+          setAccess({
+            status: 'forbidden',
+            user,
+            message: 'This Firebase account is not provisioned as an active LocalEats super_admin.',
+          });
+          return;
+        }
+
+        setAccess({
+          status: 'error',
+          user,
+          message: error.message,
+          httpStatus: error.status,
+        });
+        return;
       }
-    });
 
-    return () => {
-      unsubOrders();
-      unsubRiders();
-      unsubShops();
-    };
+      setAccess({
+        status: 'error',
+        user,
+        message: error instanceof Error ? error.message : 'Admin authorization failed.',
+        httpStatus: null,
+      });
+    }
   }, []);
 
-  const loadAllData = async () => {
-    setIsLoading(true);
+  useEffect(() => {
     try {
-      const loadedShops = await dbService.getShops();
-      const loadedOrders = await dbService.getOrders();
-      const loadedRiders = await dbService.getRiders();
-      const loadedPayments = await dbService.getPayments();
+      validateRuntimeConfiguration();
+      return observeAdminAuth(
+        (user) => {
+          if (!user) {
+            verificationSequence.current += 1;
+            setAccess({ status: 'signed-out' });
+            return;
+          }
 
-      setShops(loadedShops || []);
-      setOrders(loadedOrders || []);
-      setRiders(loadedRiders || []);
-      setPayments(loadedPayments || []);
+          void verifyAdmin(user);
+        },
+        (error) => {
+          verificationSequence.current += 1;
+          setAccess({
+            status: 'error',
+            user: null,
+            message: getSafeAuthObserverMessage(error),
+            httpStatus: null,
+          });
+        },
+      );
+    } catch (error) {
+      setAccess({
+        status: 'error',
+        user: null,
+        message: getSafeAuthObserverMessage(error),
+        httpStatus: null,
+      });
+      return undefined;
+    }
+  }, [verifyAdmin]);
+
+  const handleSignIn = async (email: string, password: string) => {
+    setLoginError(null);
+    setSignInPending(true);
+
+    try {
+      await signInAdmin(email, password);
+    } catch (error) {
+      setLoginError(getSafeLoginMessage(error));
     } finally {
-      setIsLoading(false);
+      setSignInPending(false);
     }
   };
 
-  // --- MUTATION HANDLERS ---
-  const handleUpdateShopStatus = async (shopId: string, status: ShopStatus) => {
-    const shop = shops.find((s) => s.id === shopId);
-    const updated = await dbService.updateShopStatus(shopId, status);
-    setShops(updated);
-    addToast(
-      `Merchant ${status === 'active' ? 'Approved' : 'Status Updated'}`,
-      `${shop?.name || shopId} status changed to ${status?.toUpperCase() || status}`,
-      status === 'active' ? 'success' : 'warning'
+  const handleSignOut = async () => {
+    const signedInUser = 'user' in access ? access.user : null;
+    verificationSequence.current += 1;
+    setSignOutPending(true);
+
+    try {
+      await signOutAdmin();
+    } catch {
+      setAccess({
+        status: 'error',
+        user: signedInUser,
+        message: 'Firebase sign-out failed. Please retry.',
+        httpStatus: null,
+      });
+    } finally {
+      setSignOutPending(false);
+    }
+  };
+
+  const handleAuthorizationFailure = useCallback((status: 401 | 403) => {
+    verificationSequence.current += 1;
+    setAccess((current) => {
+      if (current.status !== 'authorized') return current;
+
+      if (status === 401) {
+        return {
+          status: 'unauthorized',
+          user: current.user,
+          message: 'The LocalEats API rejected this Firebase session. Sign out and sign in again.',
+        };
+      }
+
+      return {
+        status: 'forbidden',
+        user: current.user,
+        message: 'This Firebase account is not provisioned as an active LocalEats super_admin.',
+      };
+    });
+  }, []);
+
+  if (access.status === 'auth-loading') {
+    return <LoadingScreen message="Checking Firebase authentication…" />;
+  }
+
+  if (access.status === 'signed-out') {
+    return (
+      <SignInScreen submitting={signInPending} errorMessage={loginError} onSubmit={handleSignIn} />
     );
-  };
+  }
 
-  const handleUpdateShopTakeRate = async (shopId: string, takeRate: number) => {
-    const shop = shops.find((s) => s.id === shopId);
-    const updated = await dbService.updateShopTakeRate(shopId, takeRate);
-    setShops(updated);
-    addToast(
-      'Take-Rate Updated',
-      `${shop?.name || shopId} set to ${takeRate}% platform commission`,
-      'success'
+  if (access.status === 'verifying-admin') {
+    return <LoadingScreen message="Verifying Super Admin authorization with the LocalEats API…" />;
+  }
+
+  if (access.status === 'authorized') {
+    return (
+      <ControlCenterShell
+        admin={access.admin}
+        signOutPending={signOutPending}
+        onSignOut={handleSignOut}
+        onAuthorizationFailure={handleAuthorizationFailure}
+      />
     );
-  };
+  }
 
-  const handleUpdateShopDetails = async (shopId: string, details: Partial<Shop>) => {
-    const shop = shops.find((s) => s.id === shopId);
-    const updated = await dbService.updateShopDetails(shopId, details);
-    setShops(updated);
-    addToast(
-      'Merchant Details Saved',
-      `Information for ${shop?.name || shopId} updated in Firestore`,
-      'success'
+  if (access.status === 'unauthorized') {
+    return (
+      <AccessDeniedScreen
+        title="Session not authorized"
+        message={access.message}
+        user={access.user}
+        canRetry
+        busy={signOutPending}
+        onRetry={() => void verifyAdmin(access.user)}
+        onSignOut={handleSignOut}
+      />
     );
-  };
+  }
 
-  const handleAddShop = async (shopData: Partial<Shop>) => {
-    const newShop = await dbService.addShop(shopData);
-    const updated = await dbService.getShops();
-    setShops(updated);
-    addToast(
-      'New Merchant Onboarded',
-      `${newShop.name} successfully registered into Firestore`,
-      'success'
+  if (access.status === 'forbidden') {
+    return (
+      <AccessDeniedScreen
+        title="Super Admin access denied"
+        message={access.message}
+        user={access.user}
+        canRetry
+        busy={signOutPending}
+        onRetry={() => void verifyAdmin(access.user)}
+        onSignOut={handleSignOut}
+      />
     );
-  };
-
-  const handleToggleRiderOnline = async (riderId: string) => {
-    const rider = riders.find((r) => r.id === riderId);
-    const updated = await dbService.toggleRiderOnline(riderId);
-    setRiders(updated);
-    const isNowOnline = updated.find((r) => r.id === riderId)?.is_online;
-    addToast(
-      'Rider Status Changed',
-      `${rider?.full_name} is now ${isNowOnline ? 'ONLINE' : 'OFFLINE'}`,
-      isNowOnline ? 'success' : 'info'
-    );
-  };
-
-  const handleUpdateRiderVerification = async (riderId: string, status: VerificationStatus) => {
-    const rider = riders.find((r) => r.id === riderId);
-    const updated = await dbService.updateRiderVerification(riderId, status);
-    setRiders(updated);
-    addToast(
-      `Rider Verification ${status === 'approved' ? 'Passed' : status?.toUpperCase() || status}`,
-      `Credentials for ${rider?.full_name} marked as ${status?.toUpperCase() || status}`,
-      status === 'approved' ? 'success' : 'warning'
-    );
-  };
-
-  const handleReassignRider = async (orderId: string, newRiderId: string, newRiderName: string) => {
-    const updatedOrders = await dbService.reassignOrderRider(orderId, newRiderId, newRiderName);
-    setOrders(updatedOrders);
-    const updatedRiders = await dbService.getRiders();
-    setRiders(updatedRiders);
-    addToast(
-      'Dispatch Re-assigned',
-      `Order ${orderId} reassigned to ${newRiderName}`,
-      'success'
-    );
-  };
-
-  const handleMarkPaymentCompleted = async (paymentId: string, transactionId: string) => {
-    const updated = await dbService.markPaymentCompleted(paymentId, transactionId);
-    setPayments(updated);
-    addToast(
-      'Payment Dispersal Complete',
-      `Settlement ${paymentId} completed with Ref: ${transactionId}`,
-      'success'
-    );
-  };
-
-  const handleExecuteBatchPayout = async () => {
-    const updated = await dbService.executeBatchPayout();
-    setPayments(updated);
-    addToast(
-      'Batch Dispersal Successful',
-      'All pending settlements executed via banking gateway',
-      'success'
-    );
-  };
-
-  const handleSendAlert = (title: string, message: string, target: string) => {
-    addToast('Broadcast Sent', `"${title}" sent to ${target}`, 'success');
-  };
-
-  const handleExportReports = () => {
-    const reportData = {
-      exportDate: new Date().toISOString(),
-      summary: {
-        totalShops: shops.length,
-        activeShops: shops.filter((s) => s.status === 'active').length,
-        totalOrders: orders.length,
-        onlineRiders: riders.filter((r) => r.is_online).length,
-      },
-      shops,
-      orders,
-      riders,
-      payments,
-    };
-
-    const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `LocalEats_Admin_Report_${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    addToast('Report Exported', 'JSON executive report downloaded to your device', 'success');
-  };
-
-  // Filter entities by global search query if present
-  const searchedShops = shops.filter(
-    (s) =>
-      !searchQuery ||
-      s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.suburb.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const searchedOrders = orders.filter(
-    (o) =>
-      !searchQuery ||
-      o.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      o.shop_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      o.customer_name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const searchedRiders = riders.filter(
-    (r) =>
-      !searchQuery ||
-      r.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.id.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const pendingApprovalsCount = shops.filter((s) => s.status === 'pending' || s.status === 'review').length;
-  const delayedOrdersCount = orders.filter((o) => o.status === 'DELAYED').length;
+  }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] text-[#1A1A1A] flex font-sans overflow-x-hidden">
-      {/* Side Navigation Bar */}
-      <NavigationSidebar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        pendingApprovalsCount={pendingApprovalsCount}
-        delayedOrdersCount={delayedOrdersCount}
-        onExportReports={handleExportReports}
-        onOpenSettings={() => setIsSettingsModalOpen(true)}
-      />
-
-      {/* Main Content Wrapper */}
-      <div className="flex-1 ml-0 md:ml-[240px] flex flex-col min-h-screen relative bg-[#F8F9FA]">
-        {/* Top Header Bar */}
-        <TopHeader
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          onOpenAlertModal={() => setIsAlertModalOpen(true)}
-          onOpenSettings={() => setIsSettingsModalOpen(true)}
-          unreadNotificationsCount={delayedOrdersCount + pendingApprovalsCount}
-        />
-
-        {/* Main View Area */}
-        <main className="flex-1 mt-16 p-4 md:p-8 pb-20 md:pb-8 max-w-[1600px] w-full mx-auto relative overflow-hidden">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={isLoading ? 'loading' : activeTab}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.18 }}
-            >
-              {isLoading ? (
-                <DashboardSkeleton />
-              ) : (
-                <>
-                  {activeTab === 'overview' && (
-                    <ExecutiveOverview
-                      shops={searchedShops}
-                      orders={searchedOrders}
-                      riders={searchedRiders}
-                      onNavigateToMap={() => setActiveTab('live_map')}
-                      onNavigateToApprovals={() => setActiveTab('approvals')}
-                      onNavigateToRiders={() => setActiveTab('rider_fleet')}
-                      onReassignOrder={(order) => {
-                        setReassignTargetOrder(order);
-                        setActiveTab('live_map');
-                      }}
-                    />
-                  )}
-
-                  {activeTab === 'approvals' && (
-                    <ShopApprovals
-                      shops={searchedShops}
-                      onUpdateStatus={handleUpdateShopStatus}
-                      onUpdateTakeRate={handleUpdateShopTakeRate}
-                      onUpdateShopDetails={handleUpdateShopDetails}
-                      onAddShop={handleAddShop}
-                    />
-                  )}
-
-                  {activeTab === 'live_map' && (
-                    <FleetMap
-                      shops={searchedShops}
-                      orders={searchedOrders}
-                      riders={searchedRiders}
-                      onReassignRider={handleReassignRider}
-                      reassignTargetOrder={reassignTargetOrder}
-                      clearReassignTarget={() => setReassignTargetOrder(null)}
-                    />
-                  )}
-
-                  {activeTab === 'rider_fleet' && (
-                    <RiderFleet
-                      riders={searchedRiders}
-                      onToggleOnline={handleToggleRiderOnline}
-                      onUpdateVerification={handleUpdateRiderVerification}
-                    />
-                  )}
-
-                  {activeTab === 'pairings' && (
-                    <PairingManager
-                      shops={searchedShops}
-                      riders={searchedRiders}
-                      onShowToast={addToast}
-                    />
-                  )}
-
-                  {activeTab === 'financials' && (
-                    <PayoutsHub
-                      payments={payments}
-                      onMarkCompleted={handleMarkPaymentCompleted}
-                      onExecuteBatchPayout={handleExecuteBatchPayout}
-                    />
-                  )}
-                </>
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </main>
-
-        {/* Global Footer Stats Bar */}
-        <footer className="mt-auto h-11 bg-white border-t border-gray-200 flex items-center px-8 justify-between text-xs font-sans text-gray-500">
-          <div className="flex items-center gap-6">
-            <span className="font-bold text-gray-800">LocalEats Super Admin</span>
-            <span className="hidden sm:inline">•</span>
-            <span className="hidden sm:inline font-mono-code text-[11px]">Firebase Cloud Firestore Operations</span>
-          </div>
-          <span className="text-[11px] font-mono-code text-gray-400">v1.6.0 (Firestore Connected)</span>
-        </footer>
-      </div>
-
-      {/* Global Modals */}
-      <NewAlertModal
-        isOpen={isAlertModalOpen}
-        onClose={() => setIsAlertModalOpen(false)}
-        onSendAlert={handleSendAlert}
-      />
-
-      <SettingsModal
-        isOpen={isSettingsModalOpen}
-        onClose={() => setIsSettingsModalOpen(false)}
-        onShowToast={addToast}
-        onRefreshData={loadAllData}
-      />
-
-      <ToastContainer toasts={toasts} onDismiss={removeToast} />
-    </div>
+    <AccessDeniedScreen
+      title={access.httpStatus ? `Admin API error (${access.httpStatus})` : 'Configuration or server error'}
+      message={access.message}
+      user={access.user}
+      canRetry={access.user !== null}
+      busy={signOutPending}
+      onRetry={() => {
+        if (access.user) {
+          void verifyAdmin(access.user);
+        }
+      }}
+      onSignOut={handleSignOut}
+    />
   );
 }
