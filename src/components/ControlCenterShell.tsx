@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import {
   Activity,
@@ -16,6 +17,9 @@ import {
 import type { AdminIdentity } from '../services/adminApi';
 import { BrandLogo } from './BrandLogo';
 import { ShopReviewQueue } from './ShopReviewQueue';
+import { RiderReviewQueue } from './RiderReviewQueue';
+
+type ActiveModule = 'shops' | 'riders';
 
 interface ControlCenterShellProps {
   admin: AdminIdentity;
@@ -28,40 +32,54 @@ interface ControlCenterModule {
   label: string;
   icon: LucideIcon;
   enabled: boolean;
+  key?: ActiveModule;
 }
 
 const CONTROL_CENTER_MODULES: readonly ControlCenterModule[] = [
   { label: 'Overview', icon: LayoutDashboard, enabled: false },
-  { label: 'Shop Review', icon: ClipboardCheck, enabled: true },
+  { label: 'Shop Review', icon: ClipboardCheck, enabled: true, key: 'shops' },
   { label: 'Merchants', icon: Store, enabled: false },
   { label: 'Orders', icon: ShoppingBag, enabled: false },
-  { label: 'Riders', icon: Bike, enabled: false },
+  { label: 'Riders', icon: Bike, enabled: true, key: 'riders' },
   { label: 'Finance', icon: WalletCards, enabled: false },
   { label: 'Incidents', icon: Siren, enabled: false },
   { label: 'System Health', icon: Activity, enabled: false },
   { label: 'Settings', icon: Settings, enabled: false },
 ];
 
-const ModuleButton = ({ module, compact = false }: { module: ControlCenterModule; compact?: boolean }) => {
+const ModuleButton = ({
+  module,
+  selected,
+  onSelect,
+  compact = false,
+}: {
+  module: ControlCenterModule;
+  selected: boolean;
+  onSelect: (module: ActiveModule) => void;
+  compact?: boolean;
+}) => {
   const Icon = module.icon;
 
   return (
     <button
       type="button"
       disabled={!module.enabled}
-      aria-current={module.enabled ? 'page' : undefined}
+      onClick={() => { if (module.key) onSelect(module.key); }}
+      aria-current={selected ? 'page' : undefined}
       title={module.enabled ? module.label : `${module.label}: backend not enabled`}
       className={`group flex shrink-0 items-center gap-3 rounded-md border text-left transition ${
         compact ? 'min-h-11 px-3 py-2' : 'w-full px-3 py-2.5'
       } ${
-        module.enabled
+        selected
           ? 'border-orange-200 bg-orange-50 text-orange-950 shadow-sm'
+          : module.enabled
+          ? 'border-transparent text-inherit hover:border-white/20 hover:bg-white/5'
           : 'cursor-not-allowed border-transparent text-slate-400'
       }`}
     >
       <Icon
         aria-hidden="true"
-        className={`h-4 w-4 shrink-0 ${module.enabled ? 'text-[#FF5A36]' : 'text-slate-400'}`}
+        className={`h-4 w-4 shrink-0 ${selected ? 'text-[#FF5A36]' : module.enabled ? 'text-orange-300' : 'text-slate-400'}`}
       />
       <span className="min-w-0">
         <span className="block text-xs font-bold uppercase tracking-[0.08em]">{module.label}</span>
@@ -81,7 +99,10 @@ export const ControlCenterShell = ({
   signOutPending,
   onSignOut,
   onAuthorizationFailure,
-}: ControlCenterShellProps) => (
+}: ControlCenterShellProps) => {
+  const [activeModule, setActiveModule] = useState<ActiveModule>('shops');
+
+  return (
   <div className="min-h-screen bg-slate-50 text-slate-950">
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-slate-200 bg-slate-950 text-white lg:flex">
       <div className="border-b border-white/10 px-6 py-6">
@@ -102,7 +123,7 @@ export const ControlCenterShell = ({
       <nav className="mt-5 flex-1 space-y-1 overflow-y-auto px-4 pb-5" aria-label="Control Center modules">
         {CONTROL_CENTER_MODULES.map((module) => (
           <div key={module.label}>
-            <ModuleButton module={module} />
+            <ModuleButton module={module} selected={module.key === activeModule} onSelect={setActiveModule} />
           </div>
         ))}
       </nav>
@@ -131,12 +152,17 @@ export const ControlCenterShell = ({
         <div className="flex min-h-16 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
           <div className="lg:hidden">
             <BrandLogo variant="full" size={142} />
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-600">
+              {activeModule === 'shops' ? 'Shop Review' : 'Riders'}
+            </p>
           </div>
           <div className="hidden min-w-0 lg:block">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
-              Control Center / Shop Review
+              Control Center / {activeModule === 'shops' ? 'Shop Review' : 'Riders'}
             </p>
-            <p className="mt-1 text-sm font-extrabold text-slate-950">Merchant approval operations</p>
+            <p className="mt-1 text-sm font-extrabold text-slate-950">
+              {activeModule === 'shops' ? 'Merchant approval operations' : 'Rider verification operations'}
+            </p>
           </div>
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <div className="hidden min-w-0 text-right sm:block">
@@ -164,14 +190,19 @@ export const ControlCenterShell = ({
           <div className="flex min-w-max gap-2">
             {CONTROL_CENTER_MODULES.map((module) => (
               <div key={module.label}>
-                <ModuleButton module={module} compact />
+                <ModuleButton module={module} selected={module.key === activeModule} onSelect={setActiveModule} compact />
               </div>
             ))}
           </div>
         </nav>
       </header>
 
-      <ShopReviewQueue onAuthorizationFailure={onAuthorizationFailure} />
+      {activeModule === 'shops' ? (
+        <ShopReviewQueue onAuthorizationFailure={onAuthorizationFailure} />
+      ) : (
+        <RiderReviewQueue onAuthorizationFailure={onAuthorizationFailure} />
+      )}
     </div>
   </div>
-);
+  );
+};

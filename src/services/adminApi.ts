@@ -4,6 +4,28 @@ import { getAdminAuth } from './adminAuth';
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'suspended';
 export type ApprovalAction = 'approve' | 'reject' | 'suspend' | 'reinstate';
 export type ApprovalStatusFilter = ApprovalStatus | 'all';
+export type RiderVerificationStatus = 'pending' | 'approved' | 'rejected' | 'suspended';
+
+export interface AdminRider {
+  id: string;
+  full_name: string | null;
+  phone: string | null;
+  vehicle_type: string | null;
+  verification_status: RiderVerificationStatus;
+  is_online: boolean;
+  status: string;
+}
+
+export interface AdminRiderListOptions {
+  verification_status?: RiderVerificationStatus;
+  limit?: number;
+  offset?: number;
+}
+
+export interface AdminRiderListResult {
+  riders: AdminRider[];
+  pagination: AdminShopPagination;
+}
 
 export interface AdminIdentity {
   uid: string;
@@ -74,19 +96,33 @@ interface AdminShopResponse {
   shop: AdminShop;
 }
 
+interface AdminRiderListResponse {
+  success: true;
+  riders: AdminRider[];
+  pagination: AdminShopPagination;
+}
+
+interface AdminRiderResponse {
+  success: true;
+  rider: AdminRider;
+}
+
 interface ApiErrorPayload {
   success?: false;
+  code?: string;
   error?: string;
   message?: string;
 }
 
 export class AdminApiError extends Error {
   readonly status: number | null;
+  readonly code: string | null;
 
-  constructor(message: string, status: number | null, options?: ErrorOptions) {
+  constructor(message: string, status: number | null, options?: ErrorOptions, code: string | null = null) {
     super(message, options);
     this.name = 'AdminApiError';
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -150,7 +186,9 @@ const request = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
   const payload = await readJsonBody(response);
 
   if (!response.ok) {
-    throw new AdminApiError(getErrorMessage(payload, response), response.status);
+    const code = payload && typeof payload === 'object' && 'code' in payload &&
+      typeof payload.code === 'string' ? payload.code : null;
+    throw new AdminApiError(getErrorMessage(payload, response), response.status, undefined, code);
   }
 
   if (payload === null) {
@@ -221,5 +259,41 @@ export const adminApi = {
       },
     );
     return response.shop;
+  },
+
+  async listRiders(options: AdminRiderListOptions = {}): Promise<AdminRiderListResult> {
+    const searchParams = new URLSearchParams();
+    if (options.verification_status !== undefined) {
+      searchParams.set('verification_status', options.verification_status);
+    }
+    if (options.limit !== undefined) searchParams.set('limit', String(options.limit));
+    if (options.offset !== undefined) searchParams.set('offset', String(options.offset));
+    const query = searchParams.toString();
+    const response = await request<AdminRiderListResponse>(
+      `/api/v1/admin/riders${query ? `?${query}` : ''}`,
+    );
+    return { riders: response.riders, pagination: response.pagination };
+  },
+
+  async getRider(riderId: string): Promise<AdminRider> {
+    const normalizedRiderId = riderId.trim();
+    if (!normalizedRiderId) throw new AdminApiError('Rider id is required.', 400);
+    const response = await request<AdminRiderResponse>(
+      `/api/v1/admin/riders/${encodeURIComponent(normalizedRiderId)}`,
+    );
+    return response.rider;
+  },
+
+  async updateRiderVerification(
+    riderId: string,
+    verification_status: RiderVerificationStatus,
+  ): Promise<AdminRider> {
+    const normalizedRiderId = riderId.trim();
+    if (!normalizedRiderId) throw new AdminApiError('Rider id is required.', 400);
+    const response = await request<AdminRiderResponse>(
+      `/api/v1/admin/riders/${encodeURIComponent(normalizedRiderId)}/verification`,
+      { method: 'PATCH', body: JSON.stringify({ verification_status }) },
+    );
+    return response.rider;
   },
 };
