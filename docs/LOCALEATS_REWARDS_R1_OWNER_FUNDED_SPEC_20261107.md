@@ -15,7 +15,7 @@
 
 | Current rank | New qualifying kotas needed at this rank | Milestone outcome | Next rank |
 | --- | ---: | --- | --- |
-| Bronze | 4 | One free standard kota, or one eligible food item up to **R25**; no cash/change | Silver |
+| Bronze | 4 | One free standard kota reimbursed at no more than **R25**, or another qualifying food item priced **below R25**; no cash/change | Silver |
 | Silver | 20 **additional** | Desirable food meal/bundle with target retail value **R100–R130** (working cap **R125**, pending owner and merchant approval) | Gold |
 | Gold | 40 **additional** (working threshold) | Food/bundle worth up to **R200**, contents to be approved and funded | Platinum |
 | Platinum | None required for this version | Community recognition and invitation to **apply** for ambassador opportunities | Retain Platinum |
@@ -49,9 +49,9 @@ Suggested immutable business records (schema names to be confirmed after current
 
 ## 4. Cost limits before any live campaign
 
-Bronze maximum reimbursement per completed redemption: R25. If 20 fully redeemed Bronze rewards are funded at the maximum, cash cost is R500. Higher stages raise lifetime liability: a proposed R125 Silver bundle and R200 Gold bundle increase the maximum total reward for an eligible Platinum customer to R350.
+Bronze maximum reimbursement per completed redemption: R25. Alternate non-kota food must have a selling price strictly below R25; an eligible standard kota may cost exactly R25. If 20 fully redeemed Bronze rewards are funded at the maximum, cash cost is R500. Higher stages raise lifetime liability: a proposed R125 Silver bundle and R200 Gold bundle increase the maximum total reward for an eligible Platinum customer to R350.
 
-The R25/R125/R200 caps are *maximum reimbursements*, not automatic cash value, and eligibility must match actual participating merchants' menu items. Do not offer a reward unless the reserved budget covers expected outstanding customer claims. Stop **new programme enrolment** before a limit is reached; do not revoke or silently reject already-earned entitlements. Reconcile earned-not-redeemed liability separately from fulfilled-unpaid merchant debt. Require explicit owner cap, participation agreements, fair redemption terms and refund/expiry policy before activation.
+The R25/R125/R200 caps are *proposed maximum reimbursements*, not automatic cash value, and eligibility must match actual participating merchants' menu items. Do not offer a reward unless the reserved budget covers expected outstanding customer claims. Stop **new programme enrolment** before a limit is reached; do not revoke or silently reject already-earned entitlements. Reconcile earned-not-redeemed liability separately from fulfilled-unpaid merchant debt. Require explicit owner cap, participation agreements, fair redemption terms and refund/expiry policy before activation.
 
 ## 5. Super Admin information architecture
 
