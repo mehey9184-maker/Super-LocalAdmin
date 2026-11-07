@@ -1,0 +1,47 @@
+# LocalEats Super Admin — pickup-only cross-app review
+Date: 2026-11-07. Status: **review / draft only**. No Production changes, actual shop approvals, Rider verification, billing, live orders, database changes, app deployment or merge.
+
+## Source-based architecture map
+
+| Component | Verified role and authority | Launch scope |
+| --- | --- | --- |
+| Super Admin `mehey9184-maker/Super-LocalAdmin` | Firebase Auth sign-in; browser calls central LocalEats API; API `/api/v1/admin/me` verifies active `admin_users.super_admin`. UI currently supports Shop Review and historically enabled Rider Review. | **Shop approval governance only**, Rider UI Coming soon |
+| Merchant `mehey9184-maker/LocalEats-Dashboard.2` | Merchant owner verifies shop in API and Supabase. Pending/rejected/suspended shops are not equivalent to approved trading shops. | Menu, availability, pickup inbox, accept/preparing/ready/collected, pay at physical shop |
+| Customer `mehey9184-maker/LocalEats-app` | Browse approved active shops and menus, signup/login and personal profiles, pickup orders. No browser financial authority. | Discover, menu, cart, pickup checkout and notifications |
+| Central API `localeats-api` inside Merchant repo | Verifies Firebase identity. `authorizeSuperAdmin` separately checks `public.admin_users.firebase_uid`, role `super_admin` and `is_active=true` on every admin request. Shop approval uses `transition_shop_approval` Supabase RPC with expected status. | Sole trusted authorization, pricing and order state |
+| Supabase/Firebase | Supabase stores authoritative shops/order/approval and profile records. Firebase supplies authentication and FCM; legacy Firestore collections still need security/rule compatibility verification. | No new direct frontend Supabase writes or unsafe privilege grants |
+
+**Important separation:** Supabase's vulnerable `public.handle_new_user` signup trigger currently copies user-editable metadata into `public.profiles.role`. The existing Super Admin API instead checks the separate `public.admin_users` table. Do not claim that editing a signup role *by itself* authorizes the Super Admin API; also do not assume every other legacy role consumer is safe. Repair the signup trigger before public registrations.
+
+## Inspected Code / Read-only state
+
+- Super Admin: `src/App.tsx`, `src/services/adminAuth.ts`, `src/services/adminApi.ts`, `src/components/ControlCenterShell.tsx`, `src/components/ShopReviewQueue.tsx`, `src/components/RiderReviewQueue.tsx`, `src/config/runtimeConfig.ts`.
+- API: `localeats-api/src/routes/admin.ts`, `localeats-api/src/routes/adminRiders.ts`, `localeats-api/src/middleware/authorizeSuperAdmin.ts`, `localeats-api/src/corsOrigins.ts`, `supabase/archived-migrations/20260902234040_phase4g_admin_approval_foundation.sql`.
+- A 2026-11-07 **read-only** Supabase Production query reports admin_users table present, approval-history table present, approval RPC present, only service_role (not anon/authenticated) may execute approval RPC; **1 active super-admin record**, **8 recorded shop approval events**, **9 approved owner-test shops**. No identity details read or exported. This proves database object presence/privileges, **not that the full hosted admin UI has passed end-to-end acceptance**.
+- The Super Admin app's browser configuration refuses a Firebase project ID other than `localeats-5e26e` and uses a configured `VITE_LOCALEATS_API_URL`. `adminApi` obtains Firebase ID tokens and doesn't import a direct Supabase client. API CORS requires configured `SUPER_ADMIN_ORIGIN` or another separately allowed browser origin.
+- `src/components/ShopReviewDetail.tsx` correctly states that approval **does not automatically open** a shop. Shop and order eligibility require appropriate approved/open state in the API.
+- The app's non-implemented Overview, Merchants, Orders, Finance, Incidents, Health and Settings modules are disabled. The enabled Shop Review is useful now; Rider Review is **not** needed for the pickup pilot.
+- A committed **`bun.lock` exists**, so Bun `--frozen-lockfile` testing is possible; there is no `package-lock.json`. This PR adds a minimal CI build/lint/source gate. Do not say the project has no lockfile.
+
+## What this review-only PR changes
+
+- `src/components/ControlCenterShell.tsx`: retains original branding/layout/navigation but disables the Rider review selection, labels Riders `Coming soon`, and replaces the Rider rendering path with a harmless informational placeholder. The old `RiderReviewQueue.tsx` source remains for a later, independently approved launch; it is no longer imported into the active shell.
+- `tests/pickup-only-admin-ui.test.mjs`: offline source guard proving the shop module stays available and Rider review is not wired into the shell, plus static assertions that the admin API uses Firebase token and the documented central admin endpoint. Static tests are **not** security penetration tests.
+- Dedicated GitHub workflow installs from existing `bun.lock`, typechecks/builds and runs the source guard. No cloud keys, live API calls, Supabase writes or external FCM tests are required.
+
+## Remaining cross-app risks and suggested priority
+
+1. **Rider server gate (separate API work):** The API currently mounts `/api/v1/admin/riders` with read and verification PATCH operations. Authentication and super-admin authorization are enforced, but there is no pickup-only feature flag disabling the server-side Rider verification endpoint. Hiding the browser UI **does not disable the API**. Prepare an isolated, default-off server guard (and negative tests), reviewed independently before any Production deployment. Keep Rider/delivery unavailable for at least six months of actual pickup use.
+2. **Admin approval & visibility:** Verify one synthetic merchant transitions Pending→Approved via authorized staging API; it must **not** automatically open for trading, and customer catalog must still reject unapproved/archived/closed ordering. Verify stale expected status returns conflict and the approval event records the acting verified admin. Do not test with a live shop without separate approval.
+3. **Three-month free period:** The owner-approved merchant tiers are Plus R199/month, Pro R399/month, Premium R499/month. The free period is **per shop**, starting when each shop is approved **and actually begins trading**, not upon creating/approving a test shop. No billing activation or backdated trial on the nine test shops. Define an auditable `trading_started_at` / activation event and billing rules in a later planning/review PR before enabling subscriptions.
+4. **Permissions:** Admin approval is *not* the same as merchant, rider or customer authority. Preserve the immutable verified Firebase UID, server-only approval RPC and append-only audit events. Don't use browser user metadata, profile role, local storage, request body or cached shop role as the authority. Independently address the unsafe Supabase signup-role trigger and unused rider GRANT/RLS exposures.
+5. **Deployed Firebase rules:** Customer and Merchant repository rules differ while bundled Firebase points to the same project/named database. Verify the **actual deployed Firebase rules** of the named database before any live cutover. The candidate is in Customer draft PR #73; source-level approval alone does not establish a secure deployment.
+6. **Hosted account and administrative workflow:** Super Admin sign-in, Firebase revocation handling, API CORS `SUPER_ADMIN_ORIGIN`, admin account deactivation, shop queue filters/limits, API timeouts, stale responses, and merchant/customer visibility after approval all need isolated hosted browser tests. Never test privileged decisions against real Production records without distinct authorization.
+7. **Cost and scope:** Don't build Finance, system-health, incidents, super-admin analytics, rider approval or subscription billing as prerequisites for an initial pickup pilot unless operations require a minimal manual procedure. Finish secure shops, Customer/Merchant profiles, reliable orders, notifications, support path and commercial-permitted hosting first. This repository can remain a separate frontend project under a suitable Vercel team but is **not** proof that another paid seat is necessary.
+8. **Safety:** All existing shops/accounts are owner-created tests, but that does not authorize deleting them, enabling Production orders, applying SQL, publishing Firebase rules, merging PRs, buying hosting or starting billing.
+
+Related: Merchant launch checklist https://github.com/mehey9184-maker/LocalEats-Dashboard.2/issues/73 ; Customer Firestore audit https://github.com/mehey9184-maker/LocalEats-app/issues/72 ; Merchant combined SQL review PR #79 ; Merchant push deadline PR #77 / Preview inbox PR #78.
+
+**Separate explicit owner approval is required before any Production rule, API, database, paid hosting, ordering, Rider or billing activation.**
+
+**No server-side Rider gate is deployed by this Super Admin UI PR.** Readiness stays blocked until actual published rules, hosted A/B profile/security tests, ordering reliability, owner acceptance and plan/compliance gates pass.
