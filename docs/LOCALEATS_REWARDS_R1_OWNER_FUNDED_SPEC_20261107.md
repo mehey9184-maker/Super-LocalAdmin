@@ -1,0 +1,100 @@
+# LocalEats Rewards R1 — Owner-funded, pickup-only programme
+
+**Status:** Design contract for review only. **Not launched, no earning, no redemption, no payout, no recruitment promise, no database migration, no Production activation.**
+**Owner decision (7 Nov 2026):** LocalEats funds each eligible free kota/food reward. A merchant supplies the redeemed reward; LocalEats records an amount owed only after verified handover. Admin records external payment; the authenticated shop owner acknowledges receipt.
+
+## 1. Goals and exclusions
+
+- Grow authentic repeat pickup orders and a recognisable LocalEats community without delivery or online payment.
+- Keep original Customer Profile, Merchant Marketing and Super Admin Shop Review design; add minimal standalone Rewards surfaces only after safe API contracts exist.
+- Campaign teaser may use **"A FREE KOTA? — COMING SOON"** with immediate qualifying disclosure. It must not claim rewards are live, a scan or account signup is sufficient, or current test orders count.
+- No direct browser-controlled loyalty points, customer ranks, reimbursement amounts or merchant-settlement flags. The central API authorises all changes.
+- Rewards activation and each merchant's opt-in must be separately approved. Existing owner-created test shops/orders/accounts are excluded from earning and financial reporting.
+
+## 2. Milestones and distinct counters — proposed
+
+| Current rank | New qualifying kotas needed at this rank | Milestone outcome | Next rank |
+| --- | ---: | --- | --- |
+| Bronze | 4 | One free standard kota, or one eligible food item up to **R25**; no cash/change | Silver |
+| Silver | 20 **additional** | Desirable food meal/bundle with target retail value **R100–R130** (working cap **R125**, pending owner and merchant approval) | Gold |
+| Gold | 40 **additional** (working threshold) | Food/bundle worth up to **R200**, contents to be approved and funded | Platinum |
+| Platinum | None required for this version | Community recognition and invitation to **apply** for ambassador opportunities | Retain Platinum |
+
+Examples: a customer who completes 4 qualifying kotas enters Silver with 0/20 toward Gold; after another 20, enters Gold with 0/40 toward Platinum. Lifetime rank never resets. The reward progress counter resets on promotion. Cumulative thresholds are 4 / 24 / 64, assuming the working Gold threshold is approved.
+
+**No public promise** of the R125/R200 bundle, automatic employment, or fixed launch date before the final funding and legal review.
+
+An item qualifies only when: the pilot programme is active for that timestamp and merchant; the item is on the server-managed kota-eligibility catalogue; the authenticated customer purchased it (not a reward unit); and the authorised shop marked the order paid and collected. Count units, not order count. A single collected paid order with 3 eligible kota units adds 3. A free redemption, refund, simulated checkout, cancelled order or test record adds 0. Refund/reversal after grant must trigger a reviewed correction with audit.
+
+Customer display: highest rank, current stage progress, lifetime eligible units, rewards earned, redeemed/expired if terms permit, and any discrepancies. No cached rank or frontend-only points can be the authority.
+
+## 3. Finances and merchant handover
+
+1. At the milestone, the trusted API grants exactly one customer entitlement and **reserves budget for the outstanding promise**. No shop payable exists yet.
+2. Customer selects an eligible reward at a participating merchant. Server verifies eligibility, price ceiling, budget/reservation, account, merchant, duplicate prevention and available stock; generates a single-use short-lived redemption reference for pickup.
+3. Merchant checks the handover code and confirms food actually supplied; API atomically changes the redemption to fulfilled. **Only now** create the immutable reimbursement payable to the merchant for the authorised item-price snapshot, with exactly one payable per redemption.
+4. Super Admin sees **Owed** by merchant with each reward ID, item, price snapshot, handover time and history. LocalEats owner makes an **external** bank transfer and records payment reference, amount and paid timestamp. Status becomes **Payment sent — merchant confirmation pending**, not *Settled*.
+5. Authenticated shop owner checks the actual bank receipt and selects **Confirm payment received** or **Dispute/missing payment**. Only confirmed receipts become **Settled**, with timestamp and confirming actor.
+6. Admin resolves disputes with append-only adjustment events; never delete or silently overwrite a paid or owed event.
+
+Important constraints:
+- One transaction may reimburse several fulfilled rewards, but each payable may join no more than one live transfer; partial payments require explicit immutable allocations.
+- Merchant cannot set reimbursement amount, invent rewards or mark its own payable as administrator-paid. Super Admin cannot impersonate merchant confirmation.
+- Payment receipt confirmation is by the correct merchant identity, not any signed-in person.
+- No refunds as money to customers, no cash conversion, no unapproved stacking with vouchers, no promo self-referrals, no double redemption.
+- Store all amounts as integer cents; record ZAR, exact tax/receipt treatment to be checked, status, event timestamps, immutable actor IDs and reasons.
+
+Suggested immutable business records (schema names to be confirmed after current API review):
+`reward_program_versions`, `reward_stage_definitions`, `reward_eligible_items`, `reward_earning_events` unique on original paid order-line unit, `customer_reward_entitlements` unique on milestone event, `reward_redemptions` unique on entitlement, `merchant_reward_payables` unique on fulfilled redemption, `merchant_reimbursement_transfers`, `merchant_transfer_allocations` with uniqueness/atomicity, `merchant_payment_confirmations`, and append-only `reward_audit_events`.
+
+## 4. Cost limits before any live campaign
+
+Bronze maximum reimbursement per completed redemption: R25. If 20 fully redeemed Bronze rewards are funded at the maximum, cash cost is R500. Higher stages raise lifetime liability: a proposed R125 Silver bundle and R200 Gold bundle increase the maximum total reward for an eligible Platinum customer to R350.
+
+The R25/R125/R200 caps are *maximum reimbursements*, not automatic cash value, and eligibility must match actual participating merchants' menu items. Do not offer a reward unless the reserved budget covers expected outstanding customer claims. Stop **new programme enrolment** before a limit is reached; do not revoke or silently reject already-earned entitlements. Reconcile earned-not-redeemed liability separately from fulfilled-unpaid merchant debt. Require explicit owner cap, participation agreements, fair redemption terms and refund/expiry policy before activation.
+
+## 5. Super Admin information architecture
+
+Add a separate, role-guarded **Rewards** module when the central API is tested; keep existing Shop Review accessible and Riders Coming soon. Suggested tabs:
+
+- **Programme:** proposed/published versions, rank thresholds, reward catalogue, participating shops, budgets and eligibility controls.
+- **Outstanding entitlements:** earned but not yet redeemed liabilities and reserved amounts.
+- **Merchant reimbursements:** owed, pending merchant confirmation, confirmed, disputed; individual immutable references and per-merchant totals.
+- **Ambassadors:** Platinum customers who **opt in** to hear about community/ambassador opportunities, with privacy controls and a standard recruitment workflow.
+- **Audit:** event history, authorised admin role, reversals, idempotency and disputes.
+
+No bank transfer is initiated by the app in R1. Do not enable a fake working payment button before real ledger/API verification.
+
+## 6. Community and ethical recruitment
+
+Platinum confers recognition and the right to express interest in community promotion. It does not guarantee a paid role, priority over job qualifications, or employment. Paid ambassador work must use separate job descriptions, fair hiring criteria, payment terms and opt-in privacy consent. Customers need not spend money to be considered for legitimate publicly advertised jobs. Avoid presenting purchased loyalty rank as an employment qualification.
+
+## 7. Marketing and onboarding
+
+- Merchant-generated PDF focuses on **LocalEats** and the emotional draw of a *free kota*, with shop's QR secondary.
+- **Before launch:** headline "A FREE KOTA?" and prominent "COMING SOON"; tell people no purchases currently earn free food and conditions will appear inside the app.
+- **Only after approval:** change to a concrete, true reward offer with a clear path to qualifying terms, participating merchants, qualifying items, cap, availability, dates and pickup-only redemption.
+- Profile onboarding appears after existing auth, consent and guide overlays have settled; idle-triggered once per programme version, dismissible, accessible later. Never interrupt checkout, real orders, or the merchant pickup inbox.
+- Avoid artificial urgency, undisclosed expiry, false counts, unverified discounts, pressure tied to employment or invented stock.
+
+## 8. Phased delivery & acceptance
+
+**R1:** this reviewed contract + honest Merchant PDF teaser; no money movement.
+
+**R2:** isolated PostgreSQL/API tests for deterministic stage progression, simultaneous submissions, paid-collected-only counts, entitlement uniqueness, refusal on out-of-budget, item price ceiling, redemption replay, refunds, merchant ownership, idempotent payout and dispute audit; no Production SQL.
+
+**R3:** Preview-only API-connected Customer Profile, Merchant redemption/confirmation, and Super Admin Rewards UI. Use meaningful empty states when no actual rewards exist; no fake points or stats.
+
+**R4:** manual campaign terms, funding, shop participation and commercial compliance review; small capped live pilot only after separate explicit approval and core pickup security/order release gates.
+
+Critical prerequisite: core pickup orders, signed-in profiles, Firestore rules and Supabase privilege cleanup still require independent launch verification. Rewards must not delay those gates or consume live budget prematurely.
+
+### Legal review prompts (not legal advice)
+
+South African Consumer Protection Act 68 of 2008, section 35: https://www.gov.za/documents/consumer-protection-act. Review loyalty participation terms, redemption supply, notice restrictions and availability with qualified counsel before publication. Recruit ambassadors fairly and with a separately documented agreement; see Employment Equity Act 55 of 1998: https://www.gov.za/st/documents/employment-equity-act.
+
+### Related
+
+- Merchant coming-soon teaser PR #95: https://github.com/mehey9184-maker/LocalEats-Dashboard.2/pull/95
+- Pickup launch readiness issue: https://github.com/mehey9184-maker/LocalEats-Dashboard.2/issues/73
+- Existing Super Admin Shop Review / Rider lock PR #2: https://github.com/mehey9184-maker/Super-LocalAdmin/pull/2
