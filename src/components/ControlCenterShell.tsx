@@ -17,7 +17,6 @@ import {
 import type { AdminIdentity } from '../services/adminApi';
 import { BrandLogo } from './BrandLogo';
 import { ShopReviewQueue } from './ShopReviewQueue';
-import { RiderReviewQueue } from './RiderReviewQueue';
 
 type ActiveModule = 'shops' | 'riders';
 
@@ -40,7 +39,9 @@ const CONTROL_CENTER_MODULES: readonly ControlCenterModule[] = [
   { label: 'Shop Review', icon: ClipboardCheck, enabled: true, key: 'shops' },
   { label: 'Merchants', icon: Store, enabled: false },
   { label: 'Orders', icon: ShoppingBag, enabled: false },
-  { label: 'Riders', icon: Bike, enabled: true, key: 'riders' },
+  // Pickup-only pilot: Rider approval remains inaccessible until separately approved.
+  { label: 'Riders', icon: Bike, enabled: false },
+
   { label: 'Finance', icon: WalletCards, enabled: false },
   { label: 'Incidents', icon: Siren, enabled: false },
   { label: 'System Health', icon: Activity, enabled: false },
@@ -66,7 +67,7 @@ const ModuleButton = ({
       disabled={!module.enabled}
       onClick={() => { if (module.key) onSelect(module.key); }}
       aria-current={selected ? 'page' : undefined}
-      title={module.enabled ? module.label : `${module.label}: backend not enabled`}
+      title={module.enabled ? module.label : module.label === 'Riders' ? 'Riders: Coming soon' : `${module.label}: backend not enabled`}
       className={`group flex shrink-0 items-center gap-3 rounded-md border text-left transition ${
         compact ? 'min-h-11 px-3 py-2' : 'w-full px-3 py-2.5'
       } ${
@@ -84,11 +85,11 @@ const ModuleButton = ({
       <span className="min-w-0">
         <span className="block text-xs font-bold uppercase tracking-[0.08em]">{module.label}</span>
         {!module.enabled && !compact ? (
-          <span className="mt-0.5 block text-[10px] font-medium text-slate-400">Backend not enabled</span>
+          <span className="mt-0.5 block text-[10px] font-medium text-slate-400">{module.label === 'Riders' ? 'Coming soon' : 'Backend not enabled'}</span>
         ) : null}
       </span>
       {!module.enabled && !compact ? (
-        <LockKeyhole aria-label="Backend not enabled" className="ml-auto h-3.5 w-3.5 shrink-0" />
+        <LockKeyhole aria-label={module.label === 'Riders' ? 'Coming soon' : 'Backend not enabled'} className="ml-auto h-3.5 w-3.5 shrink-0" />
       ) : null}
     </button>
   );
@@ -200,7 +201,7 @@ export const ControlCenterShell = ({
       {activeModule === 'shops' ? (
         <ShopReviewQueue onAuthorizationFailure={onAuthorizationFailure} />
       ) : (
-        <RiderReviewQueue onAuthorizationFailure={onAuthorizationFailure} />
+        <main className="mx-auto max-w-3xl p-6" role="status"><h1 className="text-xl font-bold">Riders — Coming soon</h1><p className="mt-2 text-sm text-slate-600">LocalEats is launching with pickup only. Rider approvals are not available during this pilot.</p></main>
       )}
     </div>
   </div>
