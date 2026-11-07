@@ -42,4 +42,6 @@ Date: 2026-11-07. Status: **review / draft only**. No Production changes, actual
 
 Related: Merchant launch checklist https://github.com/mehey9184-maker/LocalEats-Dashboard.2/issues/73 ; Customer Firestore audit https://github.com/mehey9184-maker/LocalEats-app/issues/72 ; Merchant combined SQL review PR #79 ; Merchant push deadline PR #77 / Preview inbox PR #78.
 
+**Separate explicit owner approval is required before any Production rule, API, database, paid hosting, ordering, Rider or billing activation.**
+
 **No server-side Rider gate is deployed by this Super Admin UI PR.** Readiness stays blocked until actual published rules, hosted A/B profile/security tests, ordering reliability, owner acceptance and plan/compliance gates pass.
