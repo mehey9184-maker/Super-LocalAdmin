@@ -1,0 +1,32 @@
+name: Super Admin pickup-only review gate
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/components/ControlCenterShell.tsx'
+      - 'src/services/adminApi.ts'
+      - 'src/App.tsx'
+      - 'src/config/runtimeConfig.ts'
+      - 'docs/LOCALEATS_SUPER_ADMIN_PICKUP_AUDIT_20261107.md'
+      - 'tests/pickup-only-admin-ui.test.mjs'
+      - '.github/workflows/pickup-superadmin-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-admin-review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+      - name: Install locked Bun dependencies; no live configuration
+        run: bun install --frozen-lockfile
+      - name: TypeScript check
+        run: bun run lint
+      - name: Build Super Admin frontend
+        run: bun run build
+      - name: Verify pickup-only Rider UI and admin API boundaries
+        run: node --test tests/pickup-only-admin-ui.test.mjs
