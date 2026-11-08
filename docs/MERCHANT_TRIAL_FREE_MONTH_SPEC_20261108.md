@@ -5,8 +5,8 @@ Canonical founder decisions: https://github.com/mehey9184-maker/LocalEats-Dashbo
 
 ## Owner-approved intent
 
-- NEW merchants have a planned **ONE CALENDAR MONTH** free subscription trial (instead of the earlier three-month commercial policy), beginning only once the shop is approved and genuinely trading, rather than during testing.
-- Only an authorised LocalEats **Super Admin** may award **+1 FREE MONTH** of merchant subscription trial to a selected shop. Merchants should see an accurate new date but cannot grant their own extensions.
+- **LATEST FOUNDER BUSINESS DIRECTION (8 Nov 2026): TWO FREE CALENDAR MONTHS by default for NEW merchants** before subscription becomes payable from month three, replacing the prior one-calendar-month decision. Still begin only once the shop has been approved and genuinely begins trading (exact verifiable event pending decision), not at shop creation or test order. Prior genuine three-month entitlement promises remain honoured.
+- Only an authorised LocalEats **Super Admin** may award **+1 FREE MONTH** of merchant subscription trial to a selected shop. With the new two-month baseline, this becomes an OPTIONAL **THIRD FREE CALENDAR MONTH**, not another automatic month or an immediately live action. Merchants see a verified updated end date and cannot grant their own extensions.
 - Existing merchants to whom a three-month entitlement was actually promised must not silently lose it.
 - Merchant subscription tiers remain Plus R199 / Pro R399 / Premium R499 as earlier plans; **no subscription bills or payments are activated** by this spec. Pickup and pay at the physical shop remain unaffected.
 
@@ -26,6 +26,8 @@ On selecting the button, present a confirmation dialog with old end and proposed
 
 **Never place a fake working action on a connected Production app.** While extension capability remains disabled, there should be no active button claiming it can save a free month; a preview-only prototype may show the disabled concept as "Coming soon" after owner review.
 
+**Commercial separation:** Merchant subscription payment owed to LocalEats starting after an approved two-month trial is NOT the same financial flow as LocalEats reimbursement OWED TO MERCHANTS for fulfilled free-kota awards. Do not secretly net, deduct, or offset these different debts. Rewards are not funded by hypothetical unpaid subscriptions. No billing or bank transfers are activated by this spec.
+
 ## Future server-authoritative command (not created)
 
 Suggested future route, subject to actual API review:
@@ -41,7 +43,7 @@ Suggested future route, subject to actual API review:
 
 1. Is the button **once per shop**, or can the owner grant another one-month extension later with a fresh reason and explicit manual approval? Default safety recommendation: one extension per shop, with a separate exceptional override procedure.
 2. When the original trial already ended, does the new month start from its old end or from the date of approval? Recommendation: don't waste the free month by backdating; choose and document this before coding.
-3. Define "begins genuine trading": after approval and customer-facing availability is enabled, or after the first real paid-and-collected order? Do not use shop created_at or a test order. Apply consistent South African local-time/calendar-month arithmetic.
+3. Define "begins genuine trading": recommended candidate is first **real external paid-and-collected pickup after approved shop status**, but owner approval and contract wording remain OPEN; alternative is verified genuine public trading after approval. Do not use shop created_at, preview/testing, or device clocks. Apply consistent South African local-time and **two calendar months, not 60 or 30 fixed days**, plus any exceptional third month.
 4. Establish treatment of shops with previously agreed three months, plan upgrades/downgrades, paused shops and trial starts before the feature launches. Do not retroactively withdraw a contractual benefit.
 5. Decide what occurs when a trial expires while **subscription billing remains disabled**. Default: no automatic charge or fake "Payment due" claim; explicit communication and separate business policy needed.
 
