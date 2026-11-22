@@ -1,0 +1,34 @@
+name: Vendor Pitch Kit isolated review (no deploy)
+on:
+  push:
+    branches:
+      - review/vendor-pitch-kit-20261123
+  pull_request:
+    paths:
+      - 'src/components/VendorPitchKit.tsx'
+      - 'src/components/ControlCenterShell.tsx'
+      - 'tests/vendor-pitch-kit.test.mjs'
+      - '.github/workflows/vendor-pitch-kit-review.yml'
+permissions:
+  contents: read
+jobs:
+  preview-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Verify safety, no collection and Admin auth
+        run: |
+          node --test tests/vendor-pitch-kit.test.mjs
+          node --test tests/founder-briefing.test.mjs
+      - name: Install dependencies without writing tracked lockfiles
+        run: npm install --no-package-lock --no-audit --no-fund
+      - name: TypeScript verification
+        run: npm run lint
+      - name: Build static preview only
+        run: npm run build
+      - name: Confirm no release or database changes
+        run: echo "VENDOR_PITCH_PREVIEW_ONLY_NO_VENDOR_RECORDS_NO_ORDERS_NO_DEPLOY"

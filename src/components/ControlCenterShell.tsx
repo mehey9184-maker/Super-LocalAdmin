@@ -4,6 +4,7 @@ import {
   Activity,
   Bike,
   BookOpenText,
+  Handshake,
   ClipboardCheck,
   LayoutDashboard,
   LockKeyhole,
@@ -18,9 +19,10 @@ import {
 import type { AdminIdentity } from '../services/adminApi';
 import { BrandLogo } from './BrandLogo';
 import { FounderBriefing } from './FounderBriefing';
+import { VendorPitchKit } from './VendorPitchKit';
 import { ShopReviewQueue } from './ShopReviewQueue';
 
-type ActiveModule = 'shops' | 'riders' | 'briefing';
+type ActiveModule = 'shops' | 'riders' | 'briefing' | 'vendorPitch';
 
 interface ControlCenterShellProps {
   admin: AdminIdentity;
@@ -40,6 +42,7 @@ const CONTROL_CENTER_MODULES: readonly ControlCenterModule[] = [
   { label: 'Overview', icon: LayoutDashboard, enabled: false },
   { label: 'Shop Review', icon: ClipboardCheck, enabled: true, key: 'shops' },
   { label: 'Founder Briefing', icon: BookOpenText, enabled: true, key: 'briefing' },
+  { label: 'Vendor Pitch', icon: Handshake, enabled: true, key: 'vendorPitch' },
   { label: 'Merchants', icon: Store, enabled: false },
   { label: 'Orders', icon: ShoppingBag, enabled: false },
   // Pickup-only pilot: Rider approval remains inaccessible until separately approved.
@@ -157,15 +160,15 @@ export const ControlCenterShell = ({
           <div className="lg:hidden">
             <BrandLogo variant="full" size={142} />
             <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-600">
-              {activeModule === 'shops' ? 'Shop Review' : activeModule === 'briefing' ? 'Founder Briefing' : 'Riders'}
+              {activeModule === 'shops' ? 'Shop Review' : activeModule === 'briefing' ? 'Founder Briefing' : activeModule === 'vendorPitch' ? 'Vendor Pitch' : 'Riders'}
             </p>
           </div>
           <div className="hidden min-w-0 lg:block">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
-              Control Center / {activeModule === 'shops' ? 'Shop Review' : 'Riders'}
+              Control Center / {activeModule === 'shops' ? 'Shop Review' : activeModule === 'briefing' ? 'Founder Briefing' : activeModule === 'vendorPitch' ? 'Vendor Pitch' : 'Riders'}
             </p>
             <p className="mt-1 text-sm font-extrabold text-slate-950">
-              {activeModule === 'shops' ? 'Merchant approval operations' : activeModule === 'briefing' ? 'Owner learning and strategy' : 'Rider verification operations'}
+              {activeModule === 'shops' ? 'Merchant approval operations' : activeModule === 'briefing' ? 'Owner learning and strategy' : activeModule === 'vendorPitch' ? 'Pickup pilot vendor outreach' : 'Rider verification operations'}
             </p>
           </div>
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
@@ -205,6 +208,8 @@ export const ControlCenterShell = ({
         <ShopReviewQueue onAuthorizationFailure={onAuthorizationFailure} />
       ) : activeModule === 'briefing' ? (
         <FounderBriefing />
+      ) : activeModule === 'vendorPitch' ? (
+        <VendorPitchKit />
       ) : (
         <main className="mx-auto max-w-3xl p-6" role="status"><h1 className="text-xl font-bold">Riders — Coming soon</h1><p className="mt-2 text-sm text-slate-600">LocalEats is launching with pickup only. Rider approvals are not available during this pilot.</p></main>
       )}
