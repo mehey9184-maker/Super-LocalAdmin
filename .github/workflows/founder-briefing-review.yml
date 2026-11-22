@@ -1,0 +1,30 @@
+name: Founder Briefing isolated review (no deploy)
+on:
+  push:
+    branches:
+      - review/founder-briefing-cf2d-20261122
+  pull_request:
+    paths:
+      - 'src/components/FounderBriefing.tsx'
+      - 'src/components/ControlCenterShell.tsx'
+      - 'tests/founder-briefing.test.mjs'
+      - '.github/workflows/founder-briefing-review.yml'
+permissions:
+  contents: read
+jobs:
+  preview-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Read-only content and authorization regression checks
+        run: node --test tests/founder-briefing.test.mjs
+      - name: Install dependencies for local build (no tracked lockfile updates)
+        run: npm install --no-package-lock --no-audit --no-fund
+      - name: TypeScript
+        run: npm run lint
+      - name: Static preview build only (no deployment)
+        run: npm run build
