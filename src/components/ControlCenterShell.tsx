@@ -3,6 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   Activity,
   Bike,
+  BookOpenText,
   ClipboardCheck,
   LayoutDashboard,
   LockKeyhole,
@@ -16,9 +17,10 @@ import {
 } from 'lucide-react';
 import type { AdminIdentity } from '../services/adminApi';
 import { BrandLogo } from './BrandLogo';
+import { FounderBriefing } from './FounderBriefing';
 import { ShopReviewQueue } from './ShopReviewQueue';
 
-type ActiveModule = 'shops' | 'riders';
+type ActiveModule = 'shops' | 'riders' | 'briefing';
 
 interface ControlCenterShellProps {
   admin: AdminIdentity;
@@ -37,6 +39,7 @@ interface ControlCenterModule {
 const CONTROL_CENTER_MODULES: readonly ControlCenterModule[] = [
   { label: 'Overview', icon: LayoutDashboard, enabled: false },
   { label: 'Shop Review', icon: ClipboardCheck, enabled: true, key: 'shops' },
+  { label: 'Founder Briefing', icon: BookOpenText, enabled: true, key: 'briefing' },
   { label: 'Merchants', icon: Store, enabled: false },
   { label: 'Orders', icon: ShoppingBag, enabled: false },
   // Pickup-only pilot: Rider approval remains inaccessible until separately approved.
@@ -154,7 +157,7 @@ export const ControlCenterShell = ({
           <div className="lg:hidden">
             <BrandLogo variant="full" size={142} />
             <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-600">
-              {activeModule === 'shops' ? 'Shop Review' : 'Riders'}
+              {activeModule === 'shops' ? 'Shop Review' : activeModule === 'briefing' ? 'Founder Briefing' : 'Riders'}
             </p>
           </div>
           <div className="hidden min-w-0 lg:block">
@@ -162,7 +165,7 @@ export const ControlCenterShell = ({
               Control Center / {activeModule === 'shops' ? 'Shop Review' : 'Riders'}
             </p>
             <p className="mt-1 text-sm font-extrabold text-slate-950">
-              {activeModule === 'shops' ? 'Merchant approval operations' : 'Rider verification operations'}
+              {activeModule === 'shops' ? 'Merchant approval operations' : activeModule === 'briefing' ? 'Owner learning and strategy' : 'Rider verification operations'}
             </p>
           </div>
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
@@ -200,6 +203,8 @@ export const ControlCenterShell = ({
 
       {activeModule === 'shops' ? (
         <ShopReviewQueue onAuthorizationFailure={onAuthorizationFailure} />
+      ) : activeModule === 'briefing' ? (
+        <FounderBriefing />
       ) : (
         <main className="mx-auto max-w-3xl p-6" role="status"><h1 className="text-xl font-bold">Riders — Coming soon</h1><p className="mt-2 text-sm text-slate-600">LocalEats is launching with pickup only. Rider approvals are not available during this pilot.</p></main>
       )}
